@@ -23,7 +23,6 @@ import org.identityconnectors.framework.common.objects.*;
 import org.identityconnectors.framework.common.objects.filter.FilterBuilder;
 import org.junit.jupiter.api.Test;
 
-import java.time.Instant;
 import java.time.ZonedDateTime;
 import java.time.format.DateTimeFormatter;
 import java.util.*;
@@ -448,22 +447,28 @@ class UserTest extends AbstractTest {
 
         String userId = "12345";
         String code = "foo";
-        String email = "foo@example.com";
-        String name = "Foo Bar";
-        String givenName = "Foo";
-        String surName = "Bar";
-        String givenNameReading = "FooFoo";
-        String surNameReading = "BarBar";
-        boolean active = true;
-        Date createdDate = Date.from(Instant.now());
-        Date updatedDate = Date.from(Instant.now());
-        String custom1 = "abc";
 
         Set<AttributeDelta> modifications = new HashSet<>();
         // IDM sets empty list to remove the single value
-        modifications.add(AttributeDeltaBuilder.build("email", Collections.emptyList()));
-        modifications.add(AttributeDeltaBuilder.build("givenName", Collections.emptyList()));
         modifications.add(AttributeDeltaBuilder.build("surName", Collections.emptyList()));
+        modifications.add(AttributeDeltaBuilder.build("givenName", Collections.emptyList()));
+        modifications.add(AttributeDeltaBuilder.build("surNameReading", Collections.emptyList()));
+        modifications.add(AttributeDeltaBuilder.build("givenNameReading", Collections.emptyList()));
+        modifications.add(AttributeDeltaBuilder.build("localName", Collections.emptyList()));
+        modifications.add(AttributeDeltaBuilder.build("localNameLocale", Collections.emptyList()));
+        modifications.add(AttributeDeltaBuilder.build("timezone", Collections.emptyList()));
+        modifications.add(AttributeDeltaBuilder.build("locale", Collections.emptyList()));
+        modifications.add(AttributeDeltaBuilder.build("description", Collections.emptyList()));
+        modifications.add(AttributeDeltaBuilder.build("phone", Collections.emptyList()));
+        modifications.add(AttributeDeltaBuilder.build("mobilePhone", Collections.emptyList()));
+        modifications.add(AttributeDeltaBuilder.build("extensionNumber", Collections.emptyList()));
+        modifications.add(AttributeDeltaBuilder.build("email", Collections.emptyList()));
+        modifications.add(AttributeDeltaBuilder.build("callto", Collections.emptyList()));
+        modifications.add(AttributeDeltaBuilder.build("url", Collections.emptyList()));
+        modifications.add(AttributeDeltaBuilder.build("employeeNumber", Collections.emptyList()));
+        modifications.add(AttributeDeltaBuilder.build("birthDate", Collections.emptyList()));
+        modifications.add(AttributeDeltaBuilder.build("joinDate", Collections.emptyList()));
+        modifications.add(AttributeDeltaBuilder.build("sortOrder", Collections.emptyList()));
         modifications.add(AttributeDeltaBuilder.build("customItem.custom1", Collections.emptyList()));
 
         AtomicReference<Uid> targetUid = new AtomicReference<>();
@@ -484,13 +489,161 @@ class UserTest extends AbstractTest {
 
         KintoneUserModel updatedUser = updated.get();
         // Kintone API treats empty string as removing the value
-        assertEquals("", updatedUser.email);
         assertEquals("", updatedUser.givenName);
         assertEquals("", updatedUser.surName);
+        assertEquals("", updatedUser.surNameReading);
+        assertEquals("", updatedUser.givenNameReading);
+        assertEquals("", updatedUser.localName);
+        assertEquals("", updatedUser.localNameLocale);
+        assertEquals("", updatedUser.timezone);
+        assertEquals("", updatedUser.locale);
+        assertEquals("", updatedUser.description);
+        assertEquals("", updatedUser.phone);
+        assertEquals("", updatedUser.mobilePhone);
+        assertEquals("", updatedUser.extensionNumber);
+        assertEquals("", updatedUser.email);
+        assertEquals("", updatedUser.callto);
+        assertEquals("", updatedUser.url);
+        assertEquals("", updatedUser.employeeNumber);
+        assertEquals("", updatedUser.birthDate);
+        assertEquals("", updatedUser.joinDate);
+        assertEquals("", updatedUser.sortOrder);
         assertNotNull(updatedUser.customItemValues);
         assertEquals(1, updatedUser.customItemValues.size());
         assertEquals("custom1", updatedUser.customItemValues.get(0).code);
         assertEquals("", updatedUser.customItemValues.get(0).value);
+    }
+
+    @Test
+    void updateUserServices() {
+        // Given
+        String currentCode = "foo";
+
+        String userId = "12345";
+        String name = "Foo Bar";
+        List<String> add = list("office");
+        List<String> del = list("mailwise");
+
+        Set<AttributeDelta> modifications = new HashSet<>();
+        modifications.add(AttributeDeltaBuilder.build("services", add, del));
+
+        mockClient.getServicesForUser = ((code, pageSize) -> {
+            return Stream.of("kintone", "mailwise");
+        });
+        AtomicReference<Uid> targetUid = new AtomicReference<>();
+        AtomicReference<List<String>> targetServices = new AtomicReference<>();
+        mockClient.updateServicesForUser = ((u, s) -> {
+            targetUid.set(u);
+            targetServices.set(s);
+        });
+
+        // When
+        Set<AttributeDelta> affected = connector.updateDelta(USER_OBJECT_CLASS, new Uid(userId, new Name(currentCode)), modifications, new OperationOptionsBuilder().build());
+
+        // Then
+        assertNull(affected);
+
+        assertEquals(currentCode, targetUid.get().getNameHintValue());
+        assertEquals(list("kintone", "office"), targetServices.get());
+    }
+
+    @Test
+    void clearUserServices() {
+        // Given
+        String currentCode = "foo";
+
+        String userId = "12345";
+        String name = "Foo Bar";
+        List<String> del = list("kintone");
+
+        Set<AttributeDelta> modifications = new HashSet<>();
+        modifications.add(AttributeDeltaBuilder.build("services", null, del));
+
+        mockClient.getServicesForUser = ((code, pageSize) -> {
+            return Stream.of("kintone");
+        });
+        AtomicReference<Uid> targetUid = new AtomicReference<>();
+        AtomicReference<List<String>> targetServices = new AtomicReference<>();
+        mockClient.updateServicesForUser = ((u, s) -> {
+            targetUid.set(u);
+            targetServices.set(s);
+        });
+
+        // When
+        Set<AttributeDelta> affected = connector.updateDelta(USER_OBJECT_CLASS, new Uid(userId, new Name(currentCode)), modifications, new OperationOptionsBuilder().build());
+
+        // Then
+        assertNull(affected);
+
+        assertEquals(currentCode, targetUid.get().getNameHintValue());
+        assertNotNull(targetServices.get());
+        assertTrue(targetServices.get().isEmpty());
+    }
+
+    @Test
+    void updateUserOrganizations() {
+        // Given
+        String currentCode = "foo";
+
+        String userId = "12345";
+        String name = "Foo Bar";
+        List<String> add = list("org1", "org2");
+        List<String> del = list("org3", "org4");
+
+        Set<AttributeDelta> modifications = new HashSet<>();
+        modifications.add(AttributeDeltaBuilder.build("organizations", add, del));
+
+        mockClient.getOrganizationsForUser = ((code, pageSize) -> {
+            return Stream.of("org3", "org4", "org5");
+        });
+        AtomicReference<Uid> targetUid = new AtomicReference<>();
+        AtomicReference<List<String>> targetOrganizations = new AtomicReference<>();
+        mockClient.updateOrganizationsForUser = ((u, o) -> {
+            targetUid.set(u);
+            targetOrganizations.set(o);
+        });
+
+        // When
+        Set<AttributeDelta> affected = connector.updateDelta(USER_OBJECT_CLASS, new Uid(userId, new Name(currentCode)), modifications, new OperationOptionsBuilder().build());
+
+        // Then
+        assertNull(affected);
+
+        assertEquals(currentCode, targetUid.get().getNameHintValue());
+        assertEquals(list("org5", "org1", "org2"), targetOrganizations.get());
+    }
+
+    @Test
+    void clearUserOrganizations() {
+        // Given
+        String currentCode = "foo";
+
+        String userId = "12345";
+        String name = "Foo Bar";
+        List<String> del = list("org1");
+
+        Set<AttributeDelta> modifications = new HashSet<>();
+        modifications.add(AttributeDeltaBuilder.build("organizations", null, del));
+
+        mockClient.getOrganizationsForUser = ((code, pageSize) -> {
+            return Stream.of("org1");
+        });
+        AtomicReference<Uid> targetUid = new AtomicReference<>();
+        AtomicReference<List<String>> targetOrganizations = new AtomicReference<>();
+        mockClient.updateOrganizationsForUser = ((u, s) -> {
+            targetUid.set(u);
+            targetOrganizations.set(s);
+        });
+
+        // When
+        Set<AttributeDelta> affected = connector.updateDelta(USER_OBJECT_CLASS, new Uid(userId, new Name(currentCode)), modifications, new OperationOptionsBuilder().build());
+
+        // Then
+        assertNull(affected);
+
+        assertEquals(currentCode, targetUid.get().getNameHintValue());
+        assertNotNull(targetOrganizations.get());
+        assertTrue(targetOrganizations.get().isEmpty());
     }
 
     @Test
@@ -500,18 +653,14 @@ class UserTest extends AbstractTest {
 
         String userId = "12345";
         String name = "Foo Bar";
-        List<String> addGroups = list("group1", "group2");
-        List<String> delGroups = list("group3", "group4");
+        List<String> add = list("group1", "group2");
+        List<String> del = list("group3", "group4");
 
         Set<AttributeDelta> modifications = new HashSet<>();
-        modifications.add(AttributeDeltaBuilder.build("groups", addGroups, delGroups));
+        modifications.add(AttributeDeltaBuilder.build("groups", add, del));
 
         mockClient.getGroupsForUser = ((code, pageSize) -> {
-            List<String> groups = new ArrayList<>();
-            groups.add("group3");
-            groups.add("group4");
-            groups.add("group5");
-            return groups.stream();
+            return Stream.of("group3", "group4", "group5");
         });
         AtomicReference<Uid> targetUid = new AtomicReference<>();
         AtomicReference<List<String>> targetGroups = new AtomicReference<>();
@@ -528,6 +677,39 @@ class UserTest extends AbstractTest {
 
         assertEquals(currentCode, targetUid.get().getNameHintValue());
         assertEquals(list("group5", "group1", "group2"), targetGroups.get());
+    }
+
+    @Test
+    void clearUserGroups() {
+        // Given
+        String currentCode = "foo";
+
+        String userId = "12345";
+        String name = "Foo Bar";
+        List<String> del = list("group1");
+
+        Set<AttributeDelta> modifications = new HashSet<>();
+        modifications.add(AttributeDeltaBuilder.build("groups", null, del));
+
+        mockClient.getGroupsForUser = ((code, pageSize) -> {
+            return Stream.of("group1");
+        });
+        AtomicReference<Uid> targetUid = new AtomicReference<>();
+        AtomicReference<List<String>> targetGroups = new AtomicReference<>();
+        mockClient.updateGroupsForUser = ((u, s) -> {
+            targetUid.set(u);
+            targetGroups.set(s);
+        });
+
+        // When
+        Set<AttributeDelta> affected = connector.updateDelta(USER_OBJECT_CLASS, new Uid(userId, new Name(currentCode)), modifications, new OperationOptionsBuilder().build());
+
+        // Then
+        assertNull(affected);
+
+        assertEquals(currentCode, targetUid.get().getNameHintValue());
+        assertNotNull(targetGroups.get());
+        assertTrue(targetGroups.get().isEmpty());
     }
 
     @Test
@@ -564,15 +746,31 @@ class UserTest extends AbstractTest {
         // Given
         String userId = "12345";
         String code = "foo";
-        String email = "foo@example.com";
-        String name = "Foo Bar";
-        String givenName = "Foo";
-        String surName = "Bar";
-        String givenNameReading = "FooFoo";
-        String surNameReading = "BarBar";
         boolean active = true;
+        String name = "Foo Bar";
+        String surName = "Bar";
+        String givenName = "Foo";
+        String surNameReading = "BarBar";
+        String givenNameReading = "FooFoo";
+        String localName = "FOO BAR";
+        String localNameLocale = "ja";
+        String timezone = "Asia/Tokyo";
+        String locale = "en";
+        String description = "This is test user.";
+        String phone = "0123";
+        String mobilePhone = "4567";
+        String extensionNumber = "890";
+        String email = "foo@example.com";
+        String callto = "foo-bar";
+        String url = "https://example.com/foo";
+        String employeeNumber = "emp001";
+        String birthDate = "1990-01-01";
+        String joinDate = "2014-04-01";
+        Integer sortOrder = 10;
+
         String createdDate = "2023-01-30T08:29:29Z";
         String updatedDate = "2023-01-30T10:15:10Z";
+
         String custom1 = "abc";
         List<String> groups = list("group1", "group2");
 
@@ -583,20 +781,37 @@ class UserTest extends AbstractTest {
             KintoneUserModel result = new KintoneUserModel();
             result.id = userId;
             result.code = code;
-            result.name = name;
             result.valid = active;
-            result.email = email;
-            result.givenName = givenName;
+            result.name = name;
             result.surName = surName;
-            result.givenNameReading = givenNameReading;
+            result.givenName = givenName;
             result.surNameReading = surNameReading;
+            result.givenNameReading = givenNameReading;
+            result.localName = localName;
+            result.localNameLocale = localNameLocale;
+            result.timezone = timezone;
+            result.locale = locale;
+            result.description = description;
+            result.phone = phone;
+            result.mobilePhone = mobilePhone;
+            result.extensionNumber = extensionNumber;
+            result.email = email;
+            result.callto = callto;
+            result.url = url;
+            result.employeeNumber = employeeNumber;
+            result.birthDate = birthDate;
+            result.joinDate = joinDate;
+            result.sortOrder = sortOrder;
+
             result.ctime = createdDate;
             result.mtime = updatedDate;
+
             result.customItemValues = new ArrayList<>();
             KintoneUserModel.CustomItem value1 = new KintoneUserModel.CustomItem();
             value1.code = "custom1";
             value1.value = custom1;
             result.customItemValues.add(value1);
+
             return result;
         });
         AtomicReference<String> targetName = new AtomicReference<>();
@@ -615,20 +830,40 @@ class UserTest extends AbstractTest {
         assertEquals(USER_OBJECT_CLASS, result.getObjectClass());
         assertEquals(userId, result.getUid().getUidValue());
         assertEquals(code, result.getName().getNameValue());
-        assertEquals(email, singleAttr(result, "email"));
-        assertEquals(name, singleAttr(result, "name"));
-        assertEquals(givenName, singleAttr(result, "givenName"));
-        assertEquals(surName, singleAttr(result, "surName"));
         assertEquals(active, singleAttr(result, OperationalAttributes.ENABLE_NAME));
+        assertEquals(name, singleAttr(result, "name"));
+        assertEquals(surName, singleAttr(result, "surName"));
+        assertEquals(givenName, singleAttr(result, "givenName"));
+        assertEquals(surNameReading, singleAttr(result, "surNameReading"));
+        assertEquals(givenNameReading, singleAttr(result, "givenNameReading"));
+        assertEquals(localName, singleAttr(result, "localName"));
+        assertEquals(localNameLocale, singleAttr(result, "localNameLocale"));
+        assertEquals(timezone, singleAttr(result, "timezone"));
+        assertEquals(locale, singleAttr(result, "locale"));
+        assertEquals(description, singleAttr(result, "description"));
+        assertEquals(phone, singleAttr(result, "phone"));
+        assertEquals(mobilePhone, singleAttr(result, "mobilePhone"));
+        assertEquals(extensionNumber, singleAttr(result, "extensionNumber"));
+        assertEquals(email, singleAttr(result, "email"));
+        assertEquals(callto, singleAttr(result, "callto"));
+        assertEquals(url, singleAttr(result, "url"));
+        assertEquals(employeeNumber, singleAttr(result, "employeeNumber"));
+        assertEquals(toZoneDateTime(birthDate), singleAttr(result, "birthDate"));
+        assertEquals(toZoneDateTime(joinDate), singleAttr(result, "joinDate"));
+        assertEquals(sortOrder, singleAttr(result, "sortOrder"));
+
         assertEquals(toZoneDateTime(DateTimeFormatter.ISO_INSTANT, createdDate), singleAttr(result, "ctime"));
         assertEquals(toZoneDateTime(DateTimeFormatter.ISO_INSTANT, updatedDate), singleAttr(result, "mtime"));
+
+        assertNull(result.getAttributeByName("customItem.custom1"), "Unexpected returned customItem.custom1 even if not configured");
+
         assertNull(result.getAttributeByName("groups"), "Unexpected returned groups even if not requested");
         assertNull(targetName.get());
         assertNull(targetPageSize.get());
     }
 
     @Test
-    void getUserByUidWithAttributes() {
+    void getUserByUidWithCustomItem() {
         // Apply custom configuration for this test
         configuration.setUserCustomItemSchema(new String[]{"custom1", "custom2"});
         ConnectorFacade connector = newFacade(configuration);
@@ -704,6 +939,7 @@ class UserTest extends AbstractTest {
             result.code = code;
             result.name = name;
             result.valid = active;
+            result.email = "";
             result.ctime = createdDate;
             result.mtime = updatedDate;
             result.customItemValues = new ArrayList<>();
@@ -727,6 +963,7 @@ class UserTest extends AbstractTest {
         assertEquals(code, result.getName().getNameValue());
         assertEquals(name, singleAttr(result, "name"));
         assertEquals(active, singleAttr(result, OperationalAttributes.ENABLE_NAME));
+        assertEquals("", singleAttr(result, "email"));
         assertEquals(toZoneDateTime(DateTimeFormatter.ISO_INSTANT, createdDate), singleAttr(result, "ctime"));
         assertEquals(toZoneDateTime(DateTimeFormatter.ISO_INSTANT, updatedDate), singleAttr(result, "mtime"));
         assertEquals("", singleAttr(result, "customItem.custom1"));
@@ -734,7 +971,7 @@ class UserTest extends AbstractTest {
     }
 
     @Test
-    void getUserByUidWithGroupsButNoOperation() {
+    void getUserByUidWithAssociationButNoOperation() {
         // Given
         String userId = "12345";
         String code = "foo";
@@ -742,6 +979,8 @@ class UserTest extends AbstractTest {
         boolean active = true;
         String createdDate = "2023-01-30T08:29:29Z";
         String updatedDate = "2023-01-30T10:15:10Z";
+        List<String> services = list("kintone", "garoon");
+        List<String> organizations = list("org1", "org2");
         List<String> groups = list("group1", "group2");
 
         AtomicReference<Uid> targetUid = new AtomicReference<>();
@@ -757,11 +996,24 @@ class UserTest extends AbstractTest {
             result.mtime = updatedDate;
             return result;
         });
-        AtomicReference<String> targetName = new AtomicReference<>();
-        AtomicReference<Integer> targetPageSize = new AtomicReference<>();
+
+        AtomicReference<String> targetName1 = new AtomicReference<>();
+        mockClient.getServicesForUser = ((u, size) -> {
+            targetName1.set(u);
+
+            return services.stream();
+        });
+
+        AtomicReference<String> targetName2 = new AtomicReference<>();
+        mockClient.getOrganizationsForUser = ((u, size) -> {
+            targetName2.set(u);
+
+            return organizations.stream();
+        });
+
+        AtomicReference<String> targetName3 = new AtomicReference<>();
         mockClient.getGroupsForUser = ((u, size) -> {
-            targetName.set(u);
-            targetPageSize.set(size);
+            targetName3.set(u);
 
             return groups.stream();
         });
@@ -778,13 +1030,16 @@ class UserTest extends AbstractTest {
         assertEquals(active, singleAttr(result, OperationalAttributes.ENABLE_NAME));
         assertEquals(toZoneDateTime(DateTimeFormatter.ISO_INSTANT, createdDate), singleAttr(result, "ctime"));
         assertEquals(toZoneDateTime(DateTimeFormatter.ISO_INSTANT, updatedDate), singleAttr(result, "mtime"));
+        assertNull(result.getAttributeByName("services"), "Unexpected returned services even if not requested");
+        assertNull(result.getAttributeByName("organizations"), "Unexpected returned organizations even if not requested");
         assertNull(result.getAttributeByName("groups"), "Unexpected returned groups even if not requested");
-        assertNull(targetName.get());
-        assertNull(targetPageSize.get());
+        assertNull(targetName1.get());
+        assertNull(targetName2.get());
+        assertNull(targetName3.get());
     }
 
     @Test
-    void getUserByUidWithGroups() {
+    void getUserByUidWithAssociation() {
         // Given
         String userId = "12345";
         String code = "foo";
@@ -792,6 +1047,8 @@ class UserTest extends AbstractTest {
         boolean active = true;
         String createdDate = "2023-01-30T08:29:29Z";
         String updatedDate = "2023-01-30T10:15:10Z";
+        List<String> services = list("kintone", "garoon");
+        List<String> organizations = list("org1", "org2");
         List<String> groups = list("group1", "group2");
 
         AtomicReference<Uid> targetUid = new AtomicReference<>();
@@ -807,18 +1064,38 @@ class UserTest extends AbstractTest {
             result.mtime = updatedDate;
             return result;
         });
-        AtomicReference<String> targetName = new AtomicReference<>();
-        AtomicReference<Integer> targetPageSize = new AtomicReference<>();
+
+        AtomicReference<String> targetName1 = new AtomicReference<>();
+        AtomicReference<Integer> targetPageSize1 = new AtomicReference<>();
+        mockClient.getServicesForUser = ((u, size) -> {
+            targetName1.set(u);
+            targetPageSize1.set(size);
+
+            return services.stream();
+        });
+
+        AtomicReference<String> targetName2 = new AtomicReference<>();
+        AtomicReference<Integer> targetPageSize2 = new AtomicReference<>();
+        mockClient.getOrganizationsForUser = ((u, size) -> {
+            targetName2.set(u);
+            targetPageSize2.set(size);
+
+            return organizations.stream();
+        });
+
+        AtomicReference<String> targetName3 = new AtomicReference<>();
+        AtomicReference<Integer> targetPageSize3 = new AtomicReference<>();
         mockClient.getGroupsForUser = ((u, size) -> {
-            targetName.set(u);
-            targetPageSize.set(size);
+            targetName3.set(u);
+            targetPageSize3.set(size);
 
             return groups.stream();
         });
 
         // When
-        // Request "groups"
-        ConnectorObject result = connector.getObject(USER_OBJECT_CLASS, new Uid(userId, new Name(code)), defaultGetOperation("groups"));
+        // Request association
+        ConnectorObject result = connector.getObject(USER_OBJECT_CLASS, new Uid(userId, new Name(code)),
+                defaultGetOperation("services", "organizations", "groups"));
 
         // Then
         assertEquals(USER_OBJECT_CLASS, result.getObjectClass());
@@ -828,14 +1105,22 @@ class UserTest extends AbstractTest {
         assertEquals(active, singleAttr(result, OperationalAttributes.ENABLE_NAME));
         assertEquals(toZoneDateTime(DateTimeFormatter.ISO_INSTANT, createdDate), singleAttr(result, "ctime"));
         assertEquals(toZoneDateTime(DateTimeFormatter.ISO_INSTANT, updatedDate), singleAttr(result, "mtime"));
+        assertEquals(services, multiAttr(result, "services"));
+        assertEquals(organizations, multiAttr(result, "organizations"));
         assertEquals(groups, multiAttr(result, "groups"));
-        assertEquals(code, targetName.get());
-        assertEquals(50, targetPageSize.get(), "Not default page size in the configuration");
+        assertEquals(code, targetName1.get());
+        assertEquals(code, targetName2.get());
+        assertEquals(code, targetName3.get());
+        assertEquals(50, targetPageSize1.get(), "Not default page size in the configuration");
+        assertEquals(50, targetPageSize2.get(), "Not default page size in the configuration");
+        assertEquals(50, targetPageSize2.get(), "Not default page size in the configuration");
     }
 
     @Test
-    void getUserByUidWithGroupsWithIgnoreGroup() {
-        // Apply custom configuration for this test
+    void getUserByUidWithAssociationWithIgnoreConfig() {
+        // Apply configuration for this test
+        configuration.setIgnoreService(new String[]{"kintone"});
+        configuration.setIgnoreOrganization(new String[]{"NotManagedOrg"});
         configuration.setIgnoreGroup(new String[]{"NotManagedGroup"});
         ConnectorFacade connector = newFacade(configuration);
 
@@ -846,6 +1131,8 @@ class UserTest extends AbstractTest {
         boolean active = true;
         String createdDate = "2023-01-30T08:29:29Z";
         String updatedDate = "2023-01-30T10:15:10Z";
+        List<String> services = list("kintone", "garoon");
+        List<String> organizations = list("org1", "NotManagedOrg", "org2");
         List<String> groups = list("group1", "NotManagedGroup", "group2");
 
         AtomicReference<Uid> targetUid = new AtomicReference<>();
@@ -861,18 +1148,32 @@ class UserTest extends AbstractTest {
             result.mtime = updatedDate;
             return result;
         });
-        AtomicReference<String> targetName = new AtomicReference<>();
-        AtomicReference<Integer> targetPageSize = new AtomicReference<>();
+
+        AtomicReference<String> targetName1 = new AtomicReference<>();
+        mockClient.getServicesForUser = ((u, size) -> {
+            targetName1.set(u);
+
+            return services.stream();
+        });
+
+        AtomicReference<String> targetName2 = new AtomicReference<>();
+        mockClient.getOrganizationsForUser = ((u, size) -> {
+            targetName2.set(u);
+
+            return organizations.stream();
+        });
+
+        AtomicReference<String> targetName3 = new AtomicReference<>();
         mockClient.getGroupsForUser = ((u, size) -> {
-            targetName.set(u);
-            targetPageSize.set(size);
+            targetName3.set(u);
 
             return groups.stream();
         });
 
         // When
-        // Request "groups"
-        ConnectorObject result = connector.getObject(USER_OBJECT_CLASS, new Uid(userId, new Name(code)), defaultGetOperation("groups"));
+        // Request association
+        ConnectorObject result = connector.getObject(USER_OBJECT_CLASS, new Uid(userId, new Name(code)),
+                defaultGetOperation("services", "organizations", "groups"));
 
         // Then
         assertEquals(USER_OBJECT_CLASS, result.getObjectClass());
@@ -882,9 +1183,12 @@ class UserTest extends AbstractTest {
         assertEquals(active, singleAttr(result, OperationalAttributes.ENABLE_NAME));
         assertEquals(toZoneDateTime(DateTimeFormatter.ISO_INSTANT, createdDate), singleAttr(result, "ctime"));
         assertEquals(toZoneDateTime(DateTimeFormatter.ISO_INSTANT, updatedDate), singleAttr(result, "mtime"));
+        assertEquals(list("garoon"), multiAttr(result, "services"));
+        assertEquals(list("org1", "org2"), multiAttr(result, "organizations"));
         assertEquals(list("group1", "group2"), multiAttr(result, "groups"));
-        assertEquals(code, targetName.get());
-        assertEquals(50, targetPageSize.get(), "Not default page size in the configuration");
+        assertEquals(code, targetName1.get());
+        assertEquals(code, targetName2.get());
+        assertEquals(code, targetName3.get());
     }
 
     @Test

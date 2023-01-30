@@ -470,6 +470,9 @@ public class SchemaDefinition {
         }
 
         private String formatDate(ZonedDateTime zonedDateTime) {
+            if (zonedDateTime == null) {
+                return null;
+            }
             if (this.dateFormat == null) {
                 return zonedDateTime.format(DEFAULT_DATE_FORMAT);
             }
@@ -477,6 +480,9 @@ public class SchemaDefinition {
         }
 
         private String formatDateTime(ZonedDateTime zonedDateTime) {
+            if (zonedDateTime == null) {
+                return null;
+            }
             if (this.dateTimeFormat == null) {
                 return zonedDateTime.format(DEFAULT_DATE_TIME_FORMAT);
             }

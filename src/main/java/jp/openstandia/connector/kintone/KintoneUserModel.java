@@ -49,7 +49,7 @@ public class KintoneUserModel {
     public String birthDate;
     public String joinDate;
     public String primaryOrganization; // The id of the organization
-    public Object sortOrder;
+    public Object sortOrder; // The type is Number, but we need to set "" for remove the value
     public List<CustomItem> customItemValues;
 
     @JsonIgnore
