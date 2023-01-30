@@ -39,7 +39,7 @@ public class KintoneConfiguration extends AbstractConfiguration {
     private int readTimeoutInMilliseconds = 10000;
     private int writeTimeoutInMilliseconds = 10000;
     private String[] userAttributesSchema = new String[]{};
-    private String[] groupAttributesSchema = new String[]{};
+    private Set<String> ignoreService = new HashSet<>();
     private Set<String> ignoreOrganization = new HashSet<>();
     private Set<String> ignoreGroup = new HashSet<>();
     private String organizationTitleDelimiter = "#";
@@ -217,6 +217,24 @@ public class KintoneConfiguration extends AbstractConfiguration {
 
     @ConfigurationProperty(
             order = 13,
+            displayMessageKey = "Ignore Services",
+            helpMessageKey = "Define the service name to be ignored when fetching service membership. The service name is case-sensitive.",
+            required = false,
+            confidential = false)
+    public String[] getIgnoreService() {
+        return ignoreService.toArray(new String[0]);
+    }
+
+    public void setIgnoreService(String[] ignoreService) {
+        this.ignoreService = Arrays.stream(ignoreService).collect(Collectors.toSet());
+    }
+
+    public Set<String> getIgnoreServiceSet() {
+        return ignoreService;
+    }
+
+    @ConfigurationProperty(
+            order = 14,
             displayMessageKey = "Ignore Organization",
             helpMessageKey = "Define the organization code to be ignored when fetching organization membership. The code is case-sensitive.",
             required = false,
@@ -234,7 +252,7 @@ public class KintoneConfiguration extends AbstractConfiguration {
     }
 
     @ConfigurationProperty(
-            order = 14,
+            order = 15,
             displayMessageKey = "Ignore Group",
             helpMessageKey = "Define the group code to be ignored when fetching group membership. The code is case-sensitive.",
             required = false,
@@ -252,7 +270,7 @@ public class KintoneConfiguration extends AbstractConfiguration {
     }
 
     @ConfigurationProperty(
-            order = 15,
+            order = 16,
             displayMessageKey = "Delimiter between organization and title",
             helpMessageKey = "Define the delimiter to separate the organisation code from the title code. (Default: #)",
             required = false,

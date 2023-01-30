@@ -45,6 +45,7 @@ class UserTest extends AbstractTest {
         String givenName = "Foo";
         String surName = "Bar";
         String password = "secret";
+        List<String> services = list("kintone", "garoon");
         List<String> organizations = list("org1", "org2");
         List<String> groups = list("group1", "group2");
 
@@ -56,6 +57,7 @@ class UserTest extends AbstractTest {
         attrs.add(AttributeBuilder.build("name", name));
         attrs.add(AttributeBuilder.build("givenName", givenName));
         attrs.add(AttributeBuilder.build("surName", surName));
+        attrs.add(AttributeBuilder.build("services", services));
         attrs.add(AttributeBuilder.build("organizations", organizations));
         attrs.add(AttributeBuilder.build("groups", groups));
 
@@ -64,6 +66,12 @@ class UserTest extends AbstractTest {
             created.set(user);
 
             return new Uid(userId, new Name(code));
+        });
+        AtomicReference<Uid> targetServiceName = new AtomicReference<>();
+        AtomicReference<List<String>> targetServices = new AtomicReference<>();
+        mockClient.updateServicesForUser = ((u, s) -> {
+            targetServiceName.set(u);
+            targetServices.set(s);
         });
         AtomicReference<Uid> targetOrgName = new AtomicReference<>();
         AtomicReference<List<String>> targetOrganizations = new AtomicReference<>();
@@ -94,8 +102,12 @@ class UserTest extends AbstractTest {
         assertTrue(newUser.valid);
         assertEquals(password, newUser.password);
 
+        assertEquals(code, targetServiceName.get().getNameHintValue());
+        assertEquals(services, targetServices.get());
+
         assertEquals(code, targetOrgName.get().getNameHintValue());
         assertEquals(organizations, targetOrganizations.get());
+
         assertEquals(code, targetGroupName.get().getNameHintValue());
         assertEquals(groups, targetGroups.get());
     }
@@ -166,6 +178,7 @@ class UserTest extends AbstractTest {
         String givenName = "Foo";
         String surName = "Bar";
         String password = "secret";
+        List<String> services = list("kintone", "garoon");
         List<String> organizations = list("org1", "org2");
         List<String> groups = list("group1", "group2");
 
@@ -176,6 +189,7 @@ class UserTest extends AbstractTest {
         modifications.add(AttributeDeltaBuilder.build("surName", surName));
         modifications.add(AttributeDeltaBuilder.buildPassword(password.toCharArray()));
         modifications.add(AttributeDeltaBuilder.buildEnabled(true));
+        modifications.add(AttributeDeltaBuilder.build("services", services, null));
         modifications.add(AttributeDeltaBuilder.build("organizations", organizations, null));
         modifications.add(AttributeDeltaBuilder.build("groups", groups, null));
 
@@ -185,28 +199,40 @@ class UserTest extends AbstractTest {
             targetUid.set(u);
             updated.set(user);
         });
-        mockClient.getOrganizationsForUser = ((c, pageSize) -> {
+        mockClient.getServicesForUser = ((c, pageSize) -> {
             return Stream.empty();
         });
         AtomicReference<Uid> targetName1 = new AtomicReference<>();
+        AtomicReference<List<String>> targetAddServices = new AtomicReference<>();
+        mockClient.updateServicesForUser = ((u, s) -> {
+            targetName1.set(u);
+            targetAddServices.set(s);
+        });
+        mockClient.getGroupsForUser = ((c, pageSize) -> {
+            return Stream.empty();
+        });
+        mockClient.getOrganizationsForUser = ((c, pageSize) -> {
+            return Stream.empty();
+        });
+        AtomicReference<Uid> targetName2 = new AtomicReference<>();
         AtomicReference<List<String>> targetAddOrgs = new AtomicReference<>();
         mockClient.updateOrganizationsForUser = ((u, o) -> {
-            targetName1.set(u);
+            targetName2.set(u);
             targetAddOrgs.set(o);
         });
         mockClient.getGroupsForUser = ((c, pageSize) -> {
             return Stream.empty();
         });
-        AtomicReference<Uid> targetName2 = new AtomicReference<>();
+        AtomicReference<Uid> targetName3 = new AtomicReference<>();
         AtomicReference<List<String>> targetAddGroups = new AtomicReference<>();
         mockClient.updateGroupsForUser = ((u, g) -> {
-            targetName2.set(u);
+            targetName3.set(u);
             targetAddGroups.set(g);
         });
-        AtomicReference<Uid> targetName3 = new AtomicReference<>();
+        AtomicReference<Uid> targetName4 = new AtomicReference<>();
         AtomicReference<String> targetNewCode = new AtomicReference<>();
         mockClient.renameUser = ((u, n) -> {
-            targetName3.set(u);
+            targetName4.set(u);
             targetNewCode.set(n);
         });
 
@@ -227,12 +253,15 @@ class UserTest extends AbstractTest {
         assertEquals(password, updatedUser.password);
 
         assertEquals(currentCode, targetName1.get().getNameHintValue());
-        assertEquals(organizations, targetAddOrgs.get());
+        assertEquals(services, targetAddServices.get());
 
         assertEquals(currentCode, targetName2.get().getNameHintValue());
-        assertEquals(groups, targetAddGroups.get());
+        assertEquals(organizations, targetAddOrgs.get());
 
         assertEquals(currentCode, targetName3.get().getNameHintValue());
+        assertEquals(groups, targetAddGroups.get());
+
+        assertEquals(currentCode, targetName4.get().getNameHintValue());
         assertEquals(code, targetNewCode.get());
     }
 

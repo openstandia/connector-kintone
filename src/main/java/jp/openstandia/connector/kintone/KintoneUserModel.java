@@ -53,6 +53,11 @@ public class KintoneUserModel {
     public List<CustomItemValue> customItemValues;
 
     @JsonIgnore
+    public List<String> addServices;
+    @JsonIgnore
+    public List<String> removeServices;
+
+    @JsonIgnore
     public List<String> addOrganizations;
     @JsonIgnore
     public List<String> removeOrganizations;
@@ -93,6 +98,10 @@ public class KintoneUserModel {
                 this.customItemValues != null;
     }
 
+    public boolean hasServiceChange() {
+        return this.addServices != null || this.removeServices != null;
+    }
+
     public boolean hasOrganizationChange() {
         return this.addOrganizations != null || this.removeOrganizations != null;
     }
@@ -125,6 +134,14 @@ public class KintoneUserModel {
                 .map(c -> c.value)
                 .findFirst()
                 .get();
+    }
+
+    public void addServices(List<String> services) {
+        this.addServices = services;
+    }
+
+    public void removeServices(List<String> services) {
+        this.removeServices = services;
     }
 
     public void addOrganizations(List<String> organizations) {

@@ -41,6 +41,9 @@ public class MockClient extends KintoneRESTClient {
     public MockTripleFunction<QueryHandler<KintoneUserModel>, Integer, Integer, Integer> getUsers;
     public MockConsumer<Uid> deleteUser;
 
+    public MockBiFunction<String, Integer, Stream<String>> getServicesForUser;
+    public MockBiConsumer<Uid, List<String>> updateServicesForUser;
+
     public MockBiFunction<String, Integer, Stream<String>> getOrganizationsForUser;
     public MockBiConsumer<Uid, List<String>> updateOrganizationsForUser;
 
@@ -112,6 +115,18 @@ public class MockClient extends KintoneRESTClient {
     @Override
     public void deleteUser(Uid uid) {
         deleteUser.accept(uid);
+    }
+
+    // User-Service
+
+    @Override
+    public Stream<String> getServicesForUser(String code, int pageSize) {
+        return getServicesForUser.apply(code, pageSize);
+    }
+
+    @Override
+    public void updateServicesForUser(Uid uid, List<String> services) {
+        updateServicesForUser.accept(uid, services);
     }
 
     // User-Organization

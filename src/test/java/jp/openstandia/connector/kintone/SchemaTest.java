@@ -46,7 +46,7 @@ class SchemaTest extends AbstractTest {
         ObjectClassInfo userSchema = user.get();
         Set<AttributeInfo> attributeInfo = userSchema.getAttributeInfo();
 
-        assertEquals(28, attributeInfo.size());
+        assertEquals(29, attributeInfo.size());
         assertAttributeInfo(attributeInfo, Uid.NAME);
         assertAttributeInfo(attributeInfo, Name.NAME);
         assertAttributeInfo(attributeInfo, OperationalAttributes.PASSWORD_NAME);
@@ -73,6 +73,7 @@ class SchemaTest extends AbstractTest {
         assertAttributeInfo(attributeInfo, "sortOrder");
         assertAttributeInfo(attributeInfo, "ctime");
         assertAttributeInfo(attributeInfo, "mtime");
+        assertAttributeInfo(attributeInfo, "services", true);
         assertAttributeInfo(attributeInfo, "organizations", true);
         assertAttributeInfo(attributeInfo, "groups", true);
     }
@@ -92,7 +93,7 @@ class SchemaTest extends AbstractTest {
         ObjectClassInfo userSchema = user.get();
         Set<AttributeInfo> attributeInfo = userSchema.getAttributeInfo();
 
-        assertEquals(30, attributeInfo.size());
+        assertEquals(31, attributeInfo.size());
         assertAttributeInfo(attributeInfo, "customItemValues.custom1");
         assertAttributeInfo(attributeInfo, "customItemValues.custom2");
     }

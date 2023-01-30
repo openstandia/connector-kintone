@@ -237,6 +237,15 @@ public class KintoneUserHandler implements ObjectHandler {
                 });
 
         // Association
+        sb.addAsMultiple("services",
+                SchemaDefinition.Types.STRING,
+                (source, dest) -> dest.addServices(source),
+                (add, dest) -> dest.addServices(add),
+                (remove, dest) -> dest.removeServices(remove),
+                (source) -> filterService(configuration, client.getServicesForUser(source.code, configuration.getDefaultQueryPageSize())),
+                null,
+                NOT_RETURNED_BY_DEFAULT
+        );
         sb.addAsMultiple("organizations",
                 SchemaDefinition.Types.STRING,
                 (source, dest) -> dest.addOrganizations(source),
@@ -277,6 +286,10 @@ public class KintoneUserHandler implements ObjectHandler {
         return sb;
     }
 
+    private static Stream<String> filterService(KintoneConfiguration configuration, Stream<String> services) {
+        Set<String> ignoreServices = configuration.getIgnoreServiceSet();
+        return services.filter(g -> !ignoreServices.contains(g));
+    }
 
     private static Stream<String> filterOrganization(KintoneConfiguration configuration, Stream<String> organizations) {
         Set<String> ignoreOrganizations = configuration.getIgnoreOrganizationSet();
@@ -300,6 +313,10 @@ public class KintoneUserHandler implements ObjectHandler {
 
         Uid newUid = client.createUser(mapped);
 
+        if (mapped.addServices != null) {
+            client.updateServicesForUser(newUid, mapped.addServices);
+        }
+
         if (mapped.addOrganizations != null) {
             client.updateOrganizationsForUser(newUid, mapped.addOrganizations);
         }
@@ -321,6 +338,21 @@ public class KintoneUserHandler implements ObjectHandler {
 
         if (dest.hasAttributesChange()) {
             client.updateUser(resolvedUid, dest);
+        }
+
+        // We need to fetch the current organizations
+        if (dest.hasServiceChange()) {
+            List<String> current = client.getServicesForUser(resolvedUid, resolvePageSize(options, configuration.getDefaultQueryPageSize()))
+                    .collect(Collectors.toList());
+
+            if (dest.addServices != null) {
+                current.addAll(dest.addServices);
+            }
+            if (dest.removeServices != null) {
+                current.removeAll(dest.removeServices);
+            }
+
+            client.updateServicesForUser(uid, current);
         }
 
         // We need to fetch the current organizations

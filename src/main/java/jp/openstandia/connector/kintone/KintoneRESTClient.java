@@ -44,6 +44,7 @@ public class KintoneRESTClient extends AbstractRESTClient<KintoneConfiguration> 
     private String testEndpoint;
     private String userEndpoint;
     private String userRenameEndpoint;
+    private String userServicesEndpoint;
     private String userOrganizationsEndpoint;
     private String userOrganizationsUpdateEndpoint;
     private String userGroupsEndpoint;
@@ -63,6 +64,15 @@ public class KintoneRESTClient extends AbstractRESTClient<KintoneConfiguration> 
         public List<KintoneUserModel> users;
         public List<KintoneOrganizationModel> organizations;
         public List<KintoneGroupModel> groups;
+    }
+
+    static class UserServicesBody {
+        public List<UserServiceBody> users;
+    }
+
+    static class UserServiceBody {
+        public String code;
+        public List<String> services;
     }
 
     static class UserOrganizationsBody {
@@ -210,6 +220,7 @@ public class KintoneRESTClient extends AbstractRESTClient<KintoneConfiguration> 
         this.testEndpoint = configuration.getBaseURL() + "/v1/users.json?size=1";
         this.userEndpoint = configuration.getBaseURL() + "/v1/users.json";
         this.userRenameEndpoint = configuration.getBaseURL() + "/v1/users/codes.json";
+        this.userServicesEndpoint = configuration.getBaseURL() + "/v1/users/services.json";
         this.userOrganizationsEndpoint = configuration.getBaseURL() + "/v1/user/organizations.json";
         this.userOrganizationsUpdateEndpoint = configuration.getBaseURL() + "/v1/userOrganizations.json";
         this.userGroupsEndpoint = configuration.getBaseURL() + "/v1/user/groups.json";
@@ -362,6 +373,43 @@ public class KintoneRESTClient extends AbstractRESTClient<KintoneConfiguration> 
         } catch (IOException e) {
             throw new ConnectorIOException(String.format("Cannot parse %s REST API Response", instanceName), e);
         }
+    }
+
+    // User-Service
+
+    public Stream<String> getServicesForUser(Uid uid, int pageSize) {
+        return getServicesForUser(uid.getNameHintValue(), pageSize);
+    }
+
+    public Stream<String>  getServicesForUser(String code, int pageSize) {
+        Map<String, String> params = new HashMap<>();
+        params.put("codes", code);
+
+        try (Response response = get(userServicesEndpoint, params)) {
+            UserServicesBody body = MAPPER.readValue(response.body().byteStream(), UserServicesBody.class);
+            Optional<UserServiceBody> services = body.users.stream()
+                    .filter(u -> u.code.equals(code))
+                    .findFirst();
+            if (services.isPresent()) {
+                return services.get().services.stream();
+            }
+            return Stream.empty();
+
+        } catch (IOException e) {
+            throw new ConnectorIOException(String.format("Cannot parse %s REST API Response", instanceName), e);
+        }
+    }
+
+    public void updateServicesForUser(Uid uid, List<String> services) {
+        UserServiceBody userService = new UserServiceBody();
+        userService.code = uid.getNameHintValue();
+        userService.services = services;
+
+        UserServicesBody body = new UserServicesBody();
+        body.users = new ArrayList<>(1);
+        body.users.add(userService);
+
+        callUpdate(USER_OBJECT_CLASS, userServicesEndpoint, uid, body);
     }
 
     // User-Organization
