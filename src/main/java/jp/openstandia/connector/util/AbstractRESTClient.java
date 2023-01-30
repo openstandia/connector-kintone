@@ -68,6 +68,9 @@ public abstract class AbstractRESTClient<C extends Configuration> {
     public abstract void test();
 
     public void close() {
+        LOG.info("Close {0} connection, current: {1}, idle: {2}",
+                instanceName, httpClient.connectionPool().connectionCount(), httpClient.connectionPool().idleConnectionCount());
+        httpClient.connectionPool().evictAll();
     }
 
     // Utilities
@@ -158,7 +161,7 @@ public abstract class AbstractRESTClient<C extends Configuration> {
         try {
             return resBody.string();
         } catch (IOException e) {
-            LOG.error(e, "Unexpected {} API response", this.instanceName);
+            LOG.error(e, "Unexpected {0} API response", this.instanceName);
             return "<failed_to_parse_response>";
         }
     }
