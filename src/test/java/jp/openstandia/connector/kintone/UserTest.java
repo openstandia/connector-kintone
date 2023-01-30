@@ -412,8 +412,8 @@ class UserTest extends AbstractTest {
         String custom2 = "efg";
 
         Set<AttributeDelta> modifications = new HashSet<>();
-        modifications.add(AttributeDeltaBuilder.build("customItemValues.custom1", custom1));
-        modifications.add(AttributeDeltaBuilder.build("customItemValues.custom2", custom2));
+        modifications.add(AttributeDeltaBuilder.build("customItem.custom1", custom1));
+        modifications.add(AttributeDeltaBuilder.build("customItem.custom2", custom2));
 
         AtomicReference<Uid> targetUid = new AtomicReference<>();
         AtomicReference<KintoneUserModel> updated = new AtomicReference<>();
@@ -464,7 +464,7 @@ class UserTest extends AbstractTest {
         modifications.add(AttributeDeltaBuilder.build("email", Collections.emptyList()));
         modifications.add(AttributeDeltaBuilder.build("givenName", Collections.emptyList()));
         modifications.add(AttributeDeltaBuilder.build("surName", Collections.emptyList()));
-        modifications.add(AttributeDeltaBuilder.build("customItemValues.custom1", Collections.emptyList()));
+        modifications.add(AttributeDeltaBuilder.build("customItem.custom1", Collections.emptyList()));
 
         AtomicReference<Uid> targetUid = new AtomicReference<>();
         AtomicReference<KintoneUserModel> updated = new AtomicReference<>();
@@ -593,7 +593,7 @@ class UserTest extends AbstractTest {
             result.ctime = createdDate;
             result.mtime = updatedDate;
             result.customItemValues = new ArrayList<>();
-            KintoneUserModel.CustomItemValue value1 = new KintoneUserModel.CustomItemValue();
+            KintoneUserModel.CustomItem value1 = new KintoneUserModel.CustomItem();
             value1.code = "custom1";
             value1.value = custom1;
             result.customItemValues.add(value1);
@@ -655,11 +655,11 @@ class UserTest extends AbstractTest {
             result.ctime = createdDate;
             result.mtime = updatedDate;
             result.customItemValues = new ArrayList<>();
-            KintoneUserModel.CustomItemValue value1 = new KintoneUserModel.CustomItemValue();
+            KintoneUserModel.CustomItem value1 = new KintoneUserModel.CustomItem();
             value1.code = "custom1";
             value1.value = custom1;
             result.customItemValues.add(value1);
-            KintoneUserModel.CustomItemValue value2 = new KintoneUserModel.CustomItemValue();
+            KintoneUserModel.CustomItem value2 = new KintoneUserModel.CustomItem();
             value2.code = "custom2";
             value2.value = custom2;
             result.customItemValues.add(value2);
@@ -677,8 +677,8 @@ class UserTest extends AbstractTest {
         assertEquals(active, singleAttr(result, OperationalAttributes.ENABLE_NAME));
         assertEquals(toZoneDateTime(DateTimeFormatter.ISO_INSTANT, createdDate), singleAttr(result, "ctime"));
         assertEquals(toZoneDateTime(DateTimeFormatter.ISO_INSTANT, updatedDate), singleAttr(result, "mtime"));
-        assertEquals(custom1, singleAttr(result, "customItemValues.custom1"));
-        assertEquals(custom2, singleAttr(result, "customItemValues.custom2"));
+        assertEquals(custom1, singleAttr(result, "customItem.custom1"));
+        assertEquals(custom2, singleAttr(result, "customItem.custom2"));
     }
 
     @Test
@@ -707,11 +707,11 @@ class UserTest extends AbstractTest {
             result.ctime = createdDate;
             result.mtime = updatedDate;
             result.customItemValues = new ArrayList<>();
-            KintoneUserModel.CustomItemValue value1 = new KintoneUserModel.CustomItemValue();
+            KintoneUserModel.CustomItem value1 = new KintoneUserModel.CustomItem();
             value1.code = "custom1";
             value1.value = "";
             result.customItemValues.add(value1);
-            KintoneUserModel.CustomItemValue value2 = new KintoneUserModel.CustomItemValue();
+            KintoneUserModel.CustomItem value2 = new KintoneUserModel.CustomItem();
             value2.code = "custom2";
             value2.value = "";
             result.customItemValues.add(value2);
@@ -729,8 +729,8 @@ class UserTest extends AbstractTest {
         assertEquals(active, singleAttr(result, OperationalAttributes.ENABLE_NAME));
         assertEquals(toZoneDateTime(DateTimeFormatter.ISO_INSTANT, createdDate), singleAttr(result, "ctime"));
         assertEquals(toZoneDateTime(DateTimeFormatter.ISO_INSTANT, updatedDate), singleAttr(result, "mtime"));
-        assertEquals("", singleAttr(result, "customItemValues.custom1"));
-        assertEquals("", singleAttr(result, "customItemValues.custom2"));
+        assertEquals("", singleAttr(result, "customItem.custom1"));
+        assertEquals("", singleAttr(result, "customItem.custom2"));
     }
 
     @Test

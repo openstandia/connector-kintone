@@ -50,7 +50,7 @@ public class KintoneUserModel {
     public String joinDate;
     public String primaryOrganization; // The id of the organization
     public Object sortOrder;
-    public List<CustomItemValue> customItemValues;
+    public List<CustomItem> customItemValues;
 
     @JsonIgnore
     public List<String> addServices;
@@ -110,23 +110,23 @@ public class KintoneUserModel {
         return this.addGroups != null || this.removeGroups != null;
     }
 
-    public static class CustomItemValue {
+    public static class CustomItem {
         public String code;
         public String value;
     }
 
-    public void setCustomItemValue(String code, String value) {
+    public void setCustomItem(String code, String value) {
         if (customItemValues == null) {
             customItemValues = new ArrayList<>();
         }
-        CustomItemValue customValue = new CustomItemValue();
+        CustomItem customValue = new CustomItem();
         customValue.code = code;
         customValue.value = value;
 
         customItemValues.add(customValue);
     }
 
-    public String getCustomItemValue(String code) {
+    public String getCustomItem(String code) {
         if (customItemValues == null) {
             return null;
         }

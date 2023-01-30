@@ -227,11 +227,11 @@ public class KintoneUserHandler implements ObjectHandler {
         Arrays.stream(configuration.getUserCustomItemSchema())
                 .forEach(x -> {
                     String attrName = x;
-                    sb.add("customItemValues." + attrName,
+                    sb.add("customItem." + attrName,
                             SchemaDefinition.Types.STRING,
-                            (source, dest) -> dest.setCustomItemValue(attrName, handleNullAsEmpty(source)),
-                            (source, dest) -> dest.setCustomItemValue(attrName, handleNullAsEmpty(source)),
-                            (source) -> source.getCustomItemValue(attrName),
+                            (source, dest) -> dest.setCustomItem(attrName, handleNullAsEmpty(source)),
+                            (source, dest) -> dest.setCustomItem(attrName, handleNullAsEmpty(source)),
+                            (source) -> source.getCustomItem(attrName),
                             null
                     );
                 });

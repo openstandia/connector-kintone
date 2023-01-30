@@ -94,8 +94,8 @@ class SchemaTest extends AbstractTest {
         Set<AttributeInfo> attributeInfo = userSchema.getAttributeInfo();
 
         assertEquals(31, attributeInfo.size());
-        assertAttributeInfo(attributeInfo, "customItemValues.custom1");
-        assertAttributeInfo(attributeInfo, "customItemValues.custom2");
+        assertAttributeInfo(attributeInfo, "customItem.custom1");
+        assertAttributeInfo(attributeInfo, "customItem.custom2");
     }
 
     @Test
