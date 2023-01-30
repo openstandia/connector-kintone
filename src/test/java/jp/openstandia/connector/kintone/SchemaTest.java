@@ -81,7 +81,7 @@ class SchemaTest extends AbstractTest {
     @Test
     void userWithAttributes() {
         // Apply custom configuration for this test
-        configuration.setUserAttributesSchema(new String[]{"custom1", "custom2"});
+        configuration.setUserCustomItemSchema(new String[]{"custom1", "custom2"});
         ConnectorFacade connector = newFacade(configuration);
 
         Schema schema = connector.schema();

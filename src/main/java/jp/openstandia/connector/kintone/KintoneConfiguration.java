@@ -38,7 +38,7 @@ public class KintoneConfiguration extends AbstractConfiguration {
     private int connectionTimeoutInMilliseconds = 10000;
     private int readTimeoutInMilliseconds = 10000;
     private int writeTimeoutInMilliseconds = 10000;
-    private String[] userAttributesSchema = new String[]{};
+    private String[] userCustomItemSchema = new String[]{};
     private Set<String> ignoreService = new HashSet<>();
     private Set<String> ignoreOrganization = new HashSet<>();
     private Set<String> ignoreGroup = new HashSet<>();
@@ -203,16 +203,16 @@ public class KintoneConfiguration extends AbstractConfiguration {
 
     @ConfigurationProperty(
             order = 12,
-            displayMessageKey = "User Attributes Schema",
-            helpMessageKey = "Define schema for user attributes.",
+            displayMessageKey = "User Custom Item Schema",
+            helpMessageKey = "Define schema for user custom item.",
             required = false,
             confidential = false)
-    public String[] getUserAttributesSchema() {
-        return userAttributesSchema;
+    public String[] getUserCustomItemSchema() {
+        return userCustomItemSchema;
     }
 
-    public void setUserAttributesSchema(String[] userAttributesSchema) {
-        this.userAttributesSchema = userAttributesSchema;
+    public void setUserCustomItemSchema(String[] userCustomItemSchema) {
+        this.userCustomItemSchema = userCustomItemSchema;
     }
 
     @ConfigurationProperty(

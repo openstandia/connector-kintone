@@ -24,6 +24,7 @@ import org.identityconnectors.framework.common.objects.filter.FilterBuilder;
 import org.junit.jupiter.api.Test;
 
 import java.time.Instant;
+import java.time.ZonedDateTime;
 import java.time.format.DateTimeFormatter;
 import java.util.*;
 import java.util.concurrent.atomic.AtomicReference;
@@ -40,11 +41,27 @@ class UserTest extends AbstractTest {
         // Given
         String userId = "12345";
         String code = "foo";
-        String email = "foo@example.com";
-        String name = "Foo Bar";
-        String givenName = "Foo";
-        String surName = "Bar";
         String password = "secret";
+        String name = "Foo Bar";
+        String surName = "Bar";
+        String givenName = "Foo";
+        String surNameReading = "BarBar";
+        String givenNameReading = "FooFoo";
+        String localName = "FOO BAR";
+        String localNameLocale = "ja";
+        String timezone = "Asia/Tokyo";
+        String locale = "en";
+        String description = "This is test user.";
+        String phone = "0123";
+        String mobilePhone = "4567";
+        String extensionNumber = "890";
+        String email = "foo@example.com";
+        String callto = "foo-bar";
+        String url = "https://example.com/foo";
+        String employeeNumber = "emp001";
+        ZonedDateTime birthDate = toZoneDateTime("1990-01-01");
+        ZonedDateTime joinDate = toZoneDateTime("2014-04-01");
+        Integer sortOrder = 10;
         List<String> services = list("kintone", "garoon");
         List<String> organizations = list("org1", "org2");
         List<String> groups = list("group1", "group2");
@@ -53,10 +70,26 @@ class UserTest extends AbstractTest {
         attrs.add(new Name(code));
         attrs.add(AttributeBuilder.buildEnabled(true));
         attrs.add(AttributeBuilder.buildPassword(password.toCharArray()));
-        attrs.add(AttributeBuilder.build("email", email));
         attrs.add(AttributeBuilder.build("name", name));
-        attrs.add(AttributeBuilder.build("givenName", givenName));
         attrs.add(AttributeBuilder.build("surName", surName));
+        attrs.add(AttributeBuilder.build("givenName", givenName));
+        attrs.add(AttributeBuilder.build("surNameReading", surNameReading));
+        attrs.add(AttributeBuilder.build("givenNameReading", givenNameReading));
+        attrs.add(AttributeBuilder.build("localName", localName));
+        attrs.add(AttributeBuilder.build("localNameLocale", localNameLocale));
+        attrs.add(AttributeBuilder.build("timezone", timezone));
+        attrs.add(AttributeBuilder.build("locale", locale));
+        attrs.add(AttributeBuilder.build("description", description));
+        attrs.add(AttributeBuilder.build("phone", phone));
+        attrs.add(AttributeBuilder.build("mobilePhone", mobilePhone));
+        attrs.add(AttributeBuilder.build("extensionNumber", extensionNumber));
+        attrs.add(AttributeBuilder.build("email", email));
+        attrs.add(AttributeBuilder.build("callto", callto));
+        attrs.add(AttributeBuilder.build("url", url));
+        attrs.add(AttributeBuilder.build("employeeNumber", employeeNumber));
+        attrs.add(AttributeBuilder.build("birthDate", birthDate));
+        attrs.add(AttributeBuilder.build("joinDate", joinDate));
+        attrs.add(AttributeBuilder.build("sortOrder", sortOrder));
         attrs.add(AttributeBuilder.build("services", services));
         attrs.add(AttributeBuilder.build("organizations", organizations));
         attrs.add(AttributeBuilder.build("groups", groups));
@@ -95,12 +128,28 @@ class UserTest extends AbstractTest {
 
         KintoneUserModel newUser = created.get();
         assertEquals(code, newUser.code);
-        assertEquals(email, newUser.email);
-        assertEquals(name, newUser.name);
-        assertEquals(givenName, newUser.givenName);
-        assertEquals(surName, newUser.surName);
         assertTrue(newUser.valid);
         assertEquals(password, newUser.password);
+        assertEquals(name, newUser.name);
+        assertEquals(surName, newUser.surName);
+        assertEquals(givenName, newUser.givenName);
+        assertEquals(surNameReading, newUser.surNameReading);
+        assertEquals(givenNameReading, newUser.givenNameReading);
+        assertEquals(localName, newUser.localName);
+        assertEquals(localNameLocale, newUser.localNameLocale);
+        assertEquals(timezone, newUser.timezone);
+        assertEquals(locale, newUser.locale);
+        assertEquals(description, newUser.description);
+        assertEquals(phone, newUser.phone);
+        assertEquals(mobilePhone, newUser.mobilePhone);
+        assertEquals(extensionNumber, newUser.extensionNumber);
+        assertEquals(email, newUser.email);
+        assertEquals(callto, newUser.callto);
+        assertEquals(url, newUser.url);
+        assertEquals(employeeNumber, newUser.employeeNumber);
+        assertEquals(birthDate.format(DateTimeFormatter.ISO_LOCAL_DATE), newUser.birthDate);
+        assertEquals(joinDate.format(DateTimeFormatter.ISO_LOCAL_DATE), newUser.joinDate);
+        assertEquals(sortOrder, newUser.sortOrder);
 
         assertEquals(code, targetServiceName.get().getNameHintValue());
         assertEquals(services, targetServices.get());
@@ -173,22 +222,56 @@ class UserTest extends AbstractTest {
 
         String userId = "12345";
         String code = "foo";
-        String email = "foo@example.com";
-        String name = "Foo Bar";
-        String givenName = "Foo";
-        String surName = "Bar";
+        boolean active = true;
         String password = "secret";
+        String name = "Foo Bar";
+        String surName = "Bar";
+        String givenName = "Foo";
+        String surNameReading = "BarBar";
+        String givenNameReading = "FooFoo";
+        String localName = "FOO BAR";
+        String localNameLocale = "ja";
+        String timezone = "Asia/Tokyo";
+        String locale = "en";
+        String description = "This is test user.";
+        String phone = "0123";
+        String mobilePhone = "4567";
+        String extensionNumber = "890";
+        String email = "foo@example.com";
+        String callto = "foo-bar";
+        String url = "https://example.com/foo";
+        String employeeNumber = "emp001";
+        ZonedDateTime birthDate = toZoneDateTime("1990-01-01");
+        ZonedDateTime joinDate = toZoneDateTime("2014-04-01");
+        Integer sortOrder = 10;
         List<String> services = list("kintone", "garoon");
         List<String> organizations = list("org1", "org2");
         List<String> groups = list("group1", "group2");
 
         Set<AttributeDelta> modifications = new HashSet<>();
         modifications.add(AttributeDeltaBuilder.build(Name.NAME, code));
-        modifications.add(AttributeDeltaBuilder.build("name", name));
-        modifications.add(AttributeDeltaBuilder.build("givenName", givenName));
-        modifications.add(AttributeDeltaBuilder.build("surName", surName));
+        modifications.add(AttributeDeltaBuilder.buildEnabled(active));
         modifications.add(AttributeDeltaBuilder.buildPassword(password.toCharArray()));
-        modifications.add(AttributeDeltaBuilder.buildEnabled(true));
+        modifications.add(AttributeDeltaBuilder.build("name", name));
+        modifications.add(AttributeDeltaBuilder.build("surName", surName));
+        modifications.add(AttributeDeltaBuilder.build("givenName", givenName));
+        modifications.add(AttributeDeltaBuilder.build("surNameReading", surNameReading));
+        modifications.add(AttributeDeltaBuilder.build("givenNameReading", givenNameReading));
+        modifications.add(AttributeDeltaBuilder.build("localName", localName));
+        modifications.add(AttributeDeltaBuilder.build("localNameLocale", localNameLocale));
+        modifications.add(AttributeDeltaBuilder.build("timezone", timezone));
+        modifications.add(AttributeDeltaBuilder.build("locale", locale));
+        modifications.add(AttributeDeltaBuilder.build("description", description));
+        modifications.add(AttributeDeltaBuilder.build("phone", phone));
+        modifications.add(AttributeDeltaBuilder.build("mobilePhone", mobilePhone));
+        modifications.add(AttributeDeltaBuilder.build("extensionNumber", extensionNumber));
+        modifications.add(AttributeDeltaBuilder.build("email", email));
+        modifications.add(AttributeDeltaBuilder.build("callto", callto));
+        modifications.add(AttributeDeltaBuilder.build("url", url));
+        modifications.add(AttributeDeltaBuilder.build("employeeNumber", employeeNumber));
+        modifications.add(AttributeDeltaBuilder.build("birthDate", birthDate));
+        modifications.add(AttributeDeltaBuilder.build("joinDate", joinDate));
+        modifications.add(AttributeDeltaBuilder.build("sortOrder", sortOrder));
         modifications.add(AttributeDeltaBuilder.build("services", services, null));
         modifications.add(AttributeDeltaBuilder.build("organizations", organizations, null));
         modifications.add(AttributeDeltaBuilder.build("groups", groups, null));
@@ -199,6 +282,7 @@ class UserTest extends AbstractTest {
             targetUid.set(u);
             updated.set(user);
         });
+
         mockClient.getServicesForUser = ((c, pageSize) -> {
             return Stream.empty();
         });
@@ -208,9 +292,7 @@ class UserTest extends AbstractTest {
             targetName1.set(u);
             targetAddServices.set(s);
         });
-        mockClient.getGroupsForUser = ((c, pageSize) -> {
-            return Stream.empty();
-        });
+
         mockClient.getOrganizationsForUser = ((c, pageSize) -> {
             return Stream.empty();
         });
@@ -220,6 +302,7 @@ class UserTest extends AbstractTest {
             targetName2.set(u);
             targetAddOrgs.set(o);
         });
+
         mockClient.getGroupsForUser = ((c, pageSize) -> {
             return Stream.empty();
         });
@@ -229,6 +312,7 @@ class UserTest extends AbstractTest {
             targetName3.set(u);
             targetAddGroups.set(g);
         });
+
         AtomicReference<Uid> targetName4 = new AtomicReference<>();
         AtomicReference<String> targetNewCode = new AtomicReference<>();
         mockClient.renameUser = ((u, n) -> {
@@ -246,11 +330,30 @@ class UserTest extends AbstractTest {
         assertEquals(currentCode, targetUid.get().getNameHintValue());
 
         KintoneUserModel updatedUser = updated.get();
-        assertEquals(name, updatedUser.name);
-        assertEquals(givenName, updatedUser.givenName);
-        assertEquals(surName, updatedUser.surName);
+        assertNull(updatedUser.id);
+        assertEquals(code, updatedUser.code);
         assertTrue(updatedUser.valid);
         assertEquals(password, updatedUser.password);
+        assertEquals(name, updatedUser.name);
+        assertEquals(surName, updatedUser.surName);
+        assertEquals(givenName, updatedUser.givenName);
+        assertEquals(surNameReading, updatedUser.surNameReading);
+        assertEquals(givenNameReading, updatedUser.givenNameReading);
+        assertEquals(localName, updatedUser.localName);
+        assertEquals(localNameLocale, updatedUser.localNameLocale);
+        assertEquals(timezone, updatedUser.timezone);
+        assertEquals(locale, updatedUser.locale);
+        assertEquals(description, updatedUser.description);
+        assertEquals(phone, updatedUser.phone);
+        assertEquals(mobilePhone, updatedUser.mobilePhone);
+        assertEquals(extensionNumber, updatedUser.extensionNumber);
+        assertEquals(email, updatedUser.email);
+        assertEquals(callto, updatedUser.callto);
+        assertEquals(url, updatedUser.url);
+        assertEquals(employeeNumber, updatedUser.employeeNumber);
+        assertEquals(birthDate.format(DateTimeFormatter.ISO_LOCAL_DATE), updatedUser.birthDate);
+        assertEquals(joinDate.format(DateTimeFormatter.ISO_LOCAL_DATE), updatedUser.joinDate);
+        assertEquals(sortOrder, updatedUser.sortOrder);
 
         assertEquals(currentCode, targetName1.get().getNameHintValue());
         assertEquals(services, targetAddServices.get());
@@ -296,9 +399,9 @@ class UserTest extends AbstractTest {
     }
 
     @Test
-    void updateUserWithCustomItemValues() {
+    void updateUserWithCustomItem() {
         // Apply custom configuration for this test
-        configuration.setUserAttributesSchema(new String[]{"custom1", "custom2"});
+        configuration.setUserCustomItemSchema(new String[]{"custom1", "custom2"});
         ConnectorFacade connector = newFacade(configuration);
 
         // Given
@@ -337,7 +440,7 @@ class UserTest extends AbstractTest {
     @Test
     void updateUserWithNoValues() {
         // Apply custom configuration for this test
-        configuration.setUserAttributesSchema(new String[]{"custom1"});
+        configuration.setUserCustomItemSchema(new String[]{"custom1"});
         ConnectorFacade connector = newFacade(configuration);
 
         // Given
@@ -527,7 +630,7 @@ class UserTest extends AbstractTest {
     @Test
     void getUserByUidWithAttributes() {
         // Apply custom configuration for this test
-        configuration.setUserAttributesSchema(new String[]{"custom1", "custom2"});
+        configuration.setUserCustomItemSchema(new String[]{"custom1", "custom2"});
         ConnectorFacade connector = newFacade(configuration);
 
         // Given
@@ -581,7 +684,7 @@ class UserTest extends AbstractTest {
     @Test
     void getUserByUidWithEmpty() {
         // Apply custom configuration for this test
-        configuration.setUserAttributesSchema(new String[]{"custom1", "custom2"});
+        configuration.setUserCustomItemSchema(new String[]{"custom1", "custom2"});
         ConnectorFacade connector = newFacade(configuration);
 
         // Given

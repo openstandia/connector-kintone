@@ -224,7 +224,7 @@ public class KintoneUserHandler implements ObjectHandler {
         );
 
         // Custom Attributes
-        Arrays.stream(configuration.getUserAttributesSchema())
+        Arrays.stream(configuration.getUserCustomItemSchema())
                 .forEach(x -> {
                     String attrName = x;
                     sb.add("customItemValues." + attrName,
