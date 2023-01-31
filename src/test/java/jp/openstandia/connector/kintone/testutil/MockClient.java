@@ -16,6 +16,7 @@
 package jp.openstandia.connector.kintone.testutil;
 
 import jp.openstandia.connector.kintone.KintoneGroupModel;
+import jp.openstandia.connector.kintone.KintoneOrganizationModel;
 import jp.openstandia.connector.kintone.KintoneRESTClient;
 import jp.openstandia.connector.kintone.KintoneUserModel;
 import jp.openstandia.connector.util.QueryHandler;
@@ -33,6 +34,7 @@ public class MockClient extends KintoneRESTClient {
 
     private static MockClient INSTANCE = new MockClient();
 
+    // User
     public MockFunction<KintoneUserModel, Uid> createUser;
     public MockBiConsumer<Uid, KintoneUserModel> updateUser;
     public MockBiConsumer<Uid, String> renameUser;
@@ -41,22 +43,35 @@ public class MockClient extends KintoneRESTClient {
     public MockTripleFunction<QueryHandler<KintoneUserModel>, Integer, Integer, Integer> getUsers;
     public MockConsumer<Uid> deleteUser;
 
+    // User-Service
     public MockBiFunction<String, Integer, Stream<String>> getServicesForUser;
     public MockBiConsumer<Uid, List<String>> updateServicesForUser;
 
+    // User-Organization
     public MockBiFunction<String, Integer, Stream<String>> getOrganizationsForUser;
     public MockBiConsumer<Uid, List<String>> updateOrganizationsForUser;
 
+    // User-Group
     public MockBiFunction<String, Integer, Stream<String>> getGroupsForUser;
     public MockBiConsumer<Uid, List<String>> updateGroupsForUser;
 
+    // Group
     public MockFunction<KintoneGroupModel, Uid> createGroup;
     public MockBiConsumer<Uid, KintoneGroupModel> updateGroup;
+    public MockBiConsumer<Uid, String> renameGroup;
     public MockFunction<Uid, KintoneGroupModel> getGroupByUid;
     public MockFunction<Name, KintoneGroupModel> getGroupByName;
     public MockTripleFunction<QueryHandler<KintoneGroupModel>, Integer, Integer, Integer> getGroups;
-    public MockBiFunction<String, Integer, Stream<String>> getGroupsForGroup;
     public MockConsumer<Uid> deleteGroup;
+
+    // Organization
+    public MockFunction<KintoneOrganizationModel, Uid> createOrganization;
+    public MockBiConsumer<Uid, KintoneOrganizationModel> updateOrganization;
+    public MockBiConsumer<Uid, String> renameOrganization;
+    public MockFunction<Uid, KintoneOrganizationModel> getOrganizationByUid;
+    public MockFunction<Name, KintoneOrganizationModel> getOrganizationByName;
+    public MockTripleFunction<QueryHandler<KintoneOrganizationModel>, Integer, Integer, Integer> getOrganizations;
+    public MockConsumer<Uid> deleteOrganization;
 
     public boolean closed = false;
 
@@ -153,6 +168,43 @@ public class MockClient extends KintoneRESTClient {
         updateGroupsForUser.accept(uid, groups);
     }
 
+    // Organization
+
+    @Override
+    public Uid createOrganization(KintoneOrganizationModel organization) throws AlreadyExistsException {
+        return createOrganization.apply(organization);
+    }
+
+    @Override
+    public void updateOrganization(Uid uid, KintoneOrganizationModel update) {
+        updateOrganization.accept(uid, update);
+    }
+
+    @Override
+    public void renameOrganization(Uid uid, String newCode) {
+        renameOrganization.accept(uid, newCode);
+    }
+
+    @Override
+    public KintoneOrganizationModel getOrganization(Uid uid, OperationOptions options, Set<String> fetchFieldsSet) {
+        return getOrganizationByUid.apply(uid);
+    }
+
+    @Override
+    public KintoneOrganizationModel getOrganization(Name name, OperationOptions options, Set<String> fetchFieldsSet) {
+        return getOrganizationByName.apply(name);
+    }
+
+    @Override
+    public int getOrganizations(QueryHandler<KintoneOrganizationModel> handler, OperationOptions options, Set<String> fetchFieldsSet, int pageSize, int pageOffset) {
+        return getOrganizations.apply(handler, pageSize, pageOffset);
+    }
+
+    @Override
+    public void deleteOrganization(Uid uid) {
+        deleteOrganization.accept(uid);
+    }
+
     // Group
 
     @Override
@@ -163,6 +215,11 @@ public class MockClient extends KintoneRESTClient {
     @Override
     public void updateGroup(Uid uid, KintoneGroupModel update) {
         updateGroup.accept(uid, update);
+    }
+
+    @Override
+    public void renameGroup(Uid uid, String newCode) {
+        renameGroup.accept(uid, newCode);
     }
 
     @Override
@@ -184,6 +241,8 @@ public class MockClient extends KintoneRESTClient {
     public void deleteGroup(Uid uid) {
         deleteGroup.accept(uid);
     }
+
+    // Mock Interface
 
     @FunctionalInterface
     public interface MockFunction<T, R> {

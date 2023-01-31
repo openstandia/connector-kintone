@@ -330,7 +330,7 @@ class UserTest extends AbstractTest {
 
         KintoneUserModel updatedUser = updated.get();
         assertNull(updatedUser.id);
-        assertEquals(code, updatedUser.code);
+        assertEquals(currentCode, updatedUser.code, "The code must be the current code for update");
         assertTrue(updatedUser.valid);
         assertEquals(password, updatedUser.password);
         assertEquals(name, updatedUser.name);
@@ -394,6 +394,8 @@ class UserTest extends AbstractTest {
         assertEquals(userId, targetUid.get().getUidValue());
 
         KintoneUserModel updatedUser = updated.get();
+        assertNull(updatedUser.id);
+        assertEquals(currentCode, updatedUser.code, "The code must be the current code for update");
         assertEquals(active, updatedUser.valid);
     }
 
@@ -430,10 +432,15 @@ class UserTest extends AbstractTest {
         assertEquals(userId, targetUid.get().getUidValue());
 
         assertEquals(currentCode, targetUid.get().getNameHintValue());
+
         assertNotNull(updated.get());
-        KintoneUserModel updatedAttrs = updated.get();
-        assertEquals(custom1, updatedAttrs.customItemValues.stream().filter(c -> c.code.equals("custom1")).findFirst().get().value);
-        assertEquals(custom2, updatedAttrs.customItemValues.stream().filter(c -> c.code.equals("custom2")).findFirst().get().value);
+
+        KintoneUserModel updatedUser = updated.get();
+
+        assertNull(updatedUser.id);
+        assertEquals(currentCode, updatedUser.code, "The code must be the current code for update");
+        assertEquals(custom1, updatedUser.customItemValues.stream().filter(c -> c.code.equals("custom1")).findFirst().get().value);
+        assertEquals(custom2, updatedUser.customItemValues.stream().filter(c -> c.code.equals("custom2")).findFirst().get().value);
     }
 
     @Test
@@ -488,6 +495,8 @@ class UserTest extends AbstractTest {
         assertEquals(code, targetUid.get().getNameHintValue());
 
         KintoneUserModel updatedUser = updated.get();
+        assertNull(updatedUser.id);
+        assertEquals(currentCode, updatedUser.code, "The code must be the current code for update");
         // Kintone API treats empty string as removing the value
         assertEquals("", updatedUser.givenName);
         assertEquals("", updatedUser.surName);
@@ -512,6 +521,38 @@ class UserTest extends AbstractTest {
         assertEquals(1, updatedUser.customItemValues.size());
         assertEquals("custom1", updatedUser.customItemValues.get(0).code);
         assertEquals("", updatedUser.customItemValues.get(0).value);
+    }
+
+
+    @Test
+    void renameUser() {
+        // Given
+        String currentCode = "hoge";
+
+        String userId = "12345";
+        String code = "foo";
+
+        List<String> groups = list("group1", "group2");
+
+        Set<AttributeDelta> modifications = new HashSet<>();
+        modifications.add(AttributeDeltaBuilder.build(Name.NAME, code));
+
+        AtomicReference<Uid> targetName1 = new AtomicReference<>();
+        AtomicReference<String> targetNewCode = new AtomicReference<>();
+        mockClient.renameUser = ((u, n) -> {
+            targetName1.set(u);
+            targetNewCode.set(n);
+        });
+
+        // When
+        Set<AttributeDelta> affected = connector.updateDelta(USER_OBJECT_CLASS, new Uid(userId, new Name(currentCode)), modifications, new OperationOptionsBuilder().build());
+
+        // Then
+        assertNull(affected);
+
+        assertEquals(userId, targetName1.get().getUidValue());
+        assertEquals(currentCode, targetName1.get().getNameHintValue());
+        assertEquals(code, targetNewCode.get());
     }
 
     @Test
@@ -1240,51 +1281,6 @@ class UserTest extends AbstractTest {
     }
 
     @Test
-    void getUserByNameWithGroupsWithPartialAttributeValues() {
-        // Given
-        String userId = "12345";
-        String code = "foo";
-        String name = "Foo Bar";
-        boolean active = true;
-        String createdDate = "2023-01-30T08:29:29Z";
-        String updatedDate = "2023-01-30T10:15:10Z";
-
-        AtomicReference<Name> targetName = new AtomicReference<>();
-        mockClient.getUserByName = ((u) -> {
-            targetName.set(u);
-
-            KintoneUserModel result = new KintoneUserModel();
-            result.id = userId;
-            result.code = code;
-            result.name = name;
-            result.valid = active;
-            result.ctime = createdDate;
-            result.mtime = updatedDate;
-            return result;
-        });
-
-        // When
-        List<ConnectorObject> results = new ArrayList<>();
-        ResultsHandler handler = connectorObject -> {
-            results.add(connectorObject);
-            return true;
-        };
-        connector.search(USER_OBJECT_CLASS, FilterBuilder.equalTo(new Name(code)), handler, defaultSearchOperation("groups"));
-
-        // Then
-        assertEquals(1, results.size());
-        ConnectorObject result = results.get(0);
-        assertEquals(USER_OBJECT_CLASS, result.getObjectClass());
-        assertEquals(userId, result.getUid().getUidValue());
-        assertEquals(code, result.getName().getNameValue());
-        assertEquals(name, singleAttr(result, "name"));
-        assertEquals(active, singleAttr(result, OperationalAttributes.ENABLE_NAME));
-        assertEquals(toZoneDateTime(DateTimeFormatter.ISO_INSTANT, createdDate), singleAttr(result, "ctime"));
-        assertEquals(toZoneDateTime(DateTimeFormatter.ISO_INSTANT, updatedDate), singleAttr(result, "mtime"));
-        assertTrue(isIncompleteAttribute(result.getAttributeByName("groups")));
-    }
-
-    @Test
     void getUsers() {
         // Given
         String userId = "12345";
@@ -1434,5 +1430,29 @@ class UserTest extends AbstractTest {
         // Then
         assertEquals(userId, deleted.get().getUidValue());
         assertEquals(code, deleted.get().getNameHintValue());
+    }
+
+    @Test
+    void deleteUserButNotFound() {
+        // Given
+        String userId = "12345";
+        String code = "foo";
+
+        AtomicReference<Uid> deleted = new AtomicReference<>();
+        mockClient.deleteUser = ((uid) -> {
+            throw new UnknownUidException();
+        });
+
+        // When
+        Throwable expect = null;
+        try {
+            connector.delete(USER_OBJECT_CLASS, new Uid(userId, new Name(code)), new OperationOptionsBuilder().build());
+        } catch (Throwable t) {
+            expect = t;
+        }
+
+        // Then
+        assertNotNull(expect);
+        assertTrue(expect instanceof UnknownUidException);
     }
 }

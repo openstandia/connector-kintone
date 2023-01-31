@@ -298,9 +298,6 @@ public class KintoneRESTClient extends AbstractRESTClient<KintoneConfiguration> 
     }
 
     public void updateUser(Uid uid, KintoneUserModel update) {
-        // Need to specify the code for update
-        update.code = uid.getNameHintValue();
-
         ListBody list = new ListBody();
         list.users = new ArrayList<>(1);
         list.users.add(update);
@@ -381,7 +378,7 @@ public class KintoneRESTClient extends AbstractRESTClient<KintoneConfiguration> 
         return getServicesForUser(uid.getNameHintValue(), pageSize);
     }
 
-    public Stream<String>  getServicesForUser(String code, int pageSize) {
+    public Stream<String> getServicesForUser(String code, int pageSize) {
         Map<String, String> params = new HashMap<>();
         params.put("codes", code);
 

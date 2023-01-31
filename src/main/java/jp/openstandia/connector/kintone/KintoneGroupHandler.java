@@ -62,6 +62,7 @@ public class KintoneGroupHandler implements ObjectHandler {
         sb.addName("code",
                 SchemaDefinition.Types.STRING_CASE_IGNORE,
                 (source, dest) -> dest.code = source,
+                (source, dest) -> dest.newCode = source,
                 (source) -> source.code,
                 null,
                 REQUIRED, NOT_UPDATEABLE
@@ -121,11 +122,13 @@ public class KintoneGroupHandler implements ObjectHandler {
         Uid resolvedUid = client.resolveGroupCode(uid);
 
         if (dest.hasAttributesChange()) {
+            // Need to specify the current code for update
+            dest.code = uid.getNameHintValue();
             client.updateGroup(resolvedUid, dest);
         }
 
         if (dest.hasCodeChange()) {
-            client.renameGroup(resolvedUid, dest.code);
+            client.renameGroup(resolvedUid, dest.newCode);
         }
 
         return null;

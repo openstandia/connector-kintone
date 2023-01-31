@@ -53,6 +53,9 @@ public class KintoneUserModel {
     public List<CustomItem> customItemValues;
 
     @JsonIgnore
+    public String newCode;
+
+    @JsonIgnore
     public List<String> addServices;
     @JsonIgnore
     public List<String> removeServices;
@@ -68,46 +71,46 @@ public class KintoneUserModel {
     public List<String> removeGroups;
 
     public boolean hasCodeChange() {
-        return this.code != null;
+        return newCode != null;
     }
 
     public boolean hasAttributesChange() {
-        return this.valid != null ||
-                this.password != null ||
-                this.name != null ||
-                this.surName != null ||
-                this.givenName != null ||
-                this.surNameReading != null ||
-                this.givenNameReading != null ||
-                this.localName != null ||
-                this.localNameLocale != null ||
-                this.timezone != null ||
-                this.locale != null ||
-                this.description != null ||
-                this.phone != null ||
-                this.mobilePhone != null ||
-                this.extensionNumber != null ||
-                this.email != null ||
-                this.callto != null ||
-                this.url != null ||
-                this.employeeNumber != null ||
-                this.birthDate != null ||
-                this.joinDate != null ||
-                this.primaryOrganization != null ||
-                this.sortOrder != null ||
-                this.customItemValues != null;
+        return valid != null ||
+                password != null ||
+                name != null ||
+                surName != null ||
+                givenName != null ||
+                surNameReading != null ||
+                givenNameReading != null ||
+                localName != null ||
+                localNameLocale != null ||
+                timezone != null ||
+                locale != null ||
+                description != null ||
+                phone != null ||
+                mobilePhone != null ||
+                extensionNumber != null ||
+                email != null ||
+                callto != null ||
+                url != null ||
+                employeeNumber != null ||
+                birthDate != null ||
+                joinDate != null ||
+                primaryOrganization != null ||
+                sortOrder != null ||
+                customItemValues != null;
     }
 
     public boolean hasServiceChange() {
-        return this.addServices != null || this.removeServices != null;
+        return addServices != null || removeServices != null;
     }
 
     public boolean hasOrganizationChange() {
-        return this.addOrganizations != null || this.removeOrganizations != null;
+        return addOrganizations != null || removeOrganizations != null;
     }
 
     public boolean hasGroupChange() {
-        return this.addGroups != null || this.removeGroups != null;
+        return addGroups != null || removeGroups != null;
     }
 
     public static class CustomItem {

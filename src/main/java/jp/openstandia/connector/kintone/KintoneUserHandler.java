@@ -70,6 +70,7 @@ public class KintoneUserHandler implements ObjectHandler {
         sb.addName("code",
                 SchemaDefinition.Types.STRING,
                 (source, dest) -> dest.code = source,
+                (source, dest) -> dest.newCode = source,
                 (source) -> source.code,
                 null,
                 REQUIRED
@@ -337,6 +338,8 @@ public class KintoneUserHandler implements ObjectHandler {
         Uid resolvedUid = client.resolveUserCode(uid);
 
         if (dest.hasAttributesChange()) {
+            // Need to specify the current code for update
+            dest.code = uid.getNameHintValue();
             client.updateUser(resolvedUid, dest);
         }
 
@@ -386,7 +389,7 @@ public class KintoneUserHandler implements ObjectHandler {
         }
 
         if (dest.hasCodeChange()) {
-            client.renameUser(resolvedUid, dest.code);
+            client.renameUser(resolvedUid, dest.newCode);
         }
 
         return null;

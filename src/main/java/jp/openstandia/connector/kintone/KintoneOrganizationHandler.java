@@ -62,6 +62,7 @@ public class KintoneOrganizationHandler implements ObjectHandler {
         sb.addName("code",
                 SchemaDefinition.Types.STRING_CASE_IGNORE,
                 (source, dest) -> dest.code = source,
+                (source, dest) -> dest.newCode = source,
                 (source) -> source.code,
                 null,
                 REQUIRED, NOT_UPDATEABLE
@@ -130,11 +131,13 @@ public class KintoneOrganizationHandler implements ObjectHandler {
         Uid resolvedUid = client.resolveOrganizationCode(uid);
 
         if (dest.hasAttributesChange()) {
+            // Need to specify the current code for update
+            dest.code = uid.getNameHintValue();
             client.updateOrganization(resolvedUid, dest);
         }
 
         if (dest.hasCodeChange()) {
-            client.renameOrganization(resolvedUid, dest.code);
+            client.renameOrganization(resolvedUid, dest.newCode);
         }
 
         return null;

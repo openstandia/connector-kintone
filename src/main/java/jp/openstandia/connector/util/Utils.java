@@ -15,7 +15,6 @@
  */
 package jp.openstandia.connector.util;
 
-import jp.openstandia.connector.kintone.KintoneConfiguration;
 import org.identityconnectors.common.logging.Log;
 import org.identityconnectors.framework.common.objects.Attribute;
 import org.identityconnectors.framework.common.objects.AttributeBuilder;
@@ -28,7 +27,6 @@ import java.time.ZoneId;
 import java.time.ZonedDateTime;
 import java.time.format.DateTimeFormatter;
 import java.util.*;
-import java.util.stream.Stream;
 
 /**
  * Provides utility methods
