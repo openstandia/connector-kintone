@@ -465,7 +465,12 @@ public class KintoneRESTClient extends AbstractRESTClient<KintoneConfiguration> 
         try (Response response = get(userOrganizationsEndpoint, params)) {
             UserOrganizationsBody body = MAPPER.readValue(response.body().byteStream(), UserOrganizationsBody.class);
             return body.organizationTitles.stream()
-                    .map(o -> o.organization + configuration.getOrganizationTitleDelimiter() + o.title.code);
+                    .map(o -> {
+                        if (o.title == null) {
+                            return o.organization.code;
+                        }
+                        return o.organization.code + configuration.getOrganizationTitleDelimiter() + o.title.code;
+                    });
 
         } catch (IOException e) {
             throw new ConnectorIOException(String.format("Cannot parse %s REST API Response", instanceName), e);

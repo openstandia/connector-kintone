@@ -60,7 +60,7 @@ public class KintoneOrganizationHandler implements ObjectHandler {
         // The name for the organization. Must be unique and changeable.
         // Also, it's case-sensitive.
         sb.addName("code",
-                SchemaDefinition.Types.STRING_CASE_IGNORE,
+                SchemaDefinition.Types.STRING,
                 (source, dest) -> dest.code = source,
                 (source, dest) -> dest.newCode = source,
                 (source) -> source.code,

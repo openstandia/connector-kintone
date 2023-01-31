@@ -301,7 +301,7 @@ public class KintoneUserHandler implements ObjectHandler {
         Set<String> ignoreGroup = configuration.getIgnoreGroupSet();
         return groups.filter(g -> !ignoreGroup.contains(g))
                 // Ignore Everyone group
-                .filter(g -> g.equals("everyone"));
+                .filter(g -> !g.equals("everyone"));
     }
 
     @Override
