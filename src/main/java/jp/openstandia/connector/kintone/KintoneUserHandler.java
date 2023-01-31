@@ -434,6 +434,5 @@ public class KintoneUserHandler implements ObjectHandler {
                       boolean allowPartialAttributeValues, int pageSize, int pageOffset) {
         return client.getUsers((u) -> resultsHandler.handle(toConnectorObject(schema, u, returnAttributesSet, allowPartialAttributeValues)),
                 options, fetchFieldsSet, pageSize, pageOffset);
-
     }
 }

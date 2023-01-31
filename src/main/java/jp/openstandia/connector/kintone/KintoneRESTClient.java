@@ -408,6 +408,11 @@ public class KintoneRESTClient extends AbstractRESTClient<KintoneConfiguration> 
 
         try (Response response = get(userEndpoint, params)) {
             ListBody list = MAPPER.readValue(response.body().byteStream(), ListBody.class);
+            for (KintoneUserModel user : list.users) {
+                if (!handler.handle(user)) {
+                    break;
+                }
+            }
             return list.users.size();
 
         } catch (IOException e) {
@@ -642,6 +647,11 @@ public class KintoneRESTClient extends AbstractRESTClient<KintoneConfiguration> 
 
         try (Response response = get(organizationEndpoint, params)) {
             ListBody list = MAPPER.readValue(response.body().byteStream(), ListBody.class);
+            for (KintoneOrganizationModel org : list.organizations) {
+                if (!handler.handle(org)) {
+                    break;
+                }
+            }
             return list.organizations.size();
 
         } catch (IOException e) {
@@ -766,6 +776,11 @@ public class KintoneRESTClient extends AbstractRESTClient<KintoneConfiguration> 
 
         try (Response response = get(groupEndpoint, params)) {
             ListBody list = MAPPER.readValue(response.body().byteStream(), ListBody.class);
+            for (KintoneGroupModel group : list.groups) {
+                if (!handler.handle(group)) {
+                    break;
+                }
+            }
             return list.groups.size();
 
         } catch (IOException e) {
