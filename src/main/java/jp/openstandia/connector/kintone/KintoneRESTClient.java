@@ -536,7 +536,7 @@ public class KintoneRESTClient extends AbstractRESTClient<KintoneConfiguration> 
         callCreate(ORGANIZATION_OBJECT_CLASS, organizationEndpoint, body, newOrganization.code);
 
         // We need to fetch the created object for getting the generated id
-        KintoneGroupModel created = getGroup(new Name(newOrganization.code), null, null);
+        KintoneOrganizationModel created = getOrganization(new Name(newOrganization.code), null, null);
 
         return new Uid(created.id, newOrganization.code);
     }
