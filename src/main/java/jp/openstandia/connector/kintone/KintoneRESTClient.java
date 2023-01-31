@@ -39,7 +39,7 @@ import static jp.openstandia.connector.kintone.KintoneUserHandler.USER_OBJECT_CL
 
 public class KintoneRESTClient extends AbstractRESTClient<KintoneConfiguration> {
     private static final Log LOG = Log.getLog(KintoneRESTClient.class);
-    private static ErrorHandler ERROR_HANDLER = new KintoneErrorHandler();
+    private ErrorHandler ERROR_HANDLER = new KintoneErrorHandler();
 
     private String testEndpoint;
     private String userEndpoint;
@@ -123,14 +123,17 @@ public class KintoneRESTClient extends AbstractRESTClient<KintoneConfiguration> 
         public String newCode;
     }
 
-    static class KintoneErrorHandler implements ErrorHandler {
+    class KintoneErrorHandler implements ErrorHandler {
         @Override
         public boolean inNotAuthenticated(Response response) {
             if (response.code() != 520) {
                 return false;
             }
             try {
-                ErrorResponse res = MAPPER.readValue(response.body().byteStream(), ErrorResponse.class);
+                String bodyText = snapshotResponse(response);
+
+                ErrorResponse res = MAPPER.readValue(bodyText, ErrorResponse.class);
+
                 return res.code.equals("CB_WA01") // Invalid credential
                         || res.code.equals("CB_AU01"); // No auth header
             } catch (IOException e) {
@@ -144,20 +147,29 @@ public class KintoneRESTClient extends AbstractRESTClient<KintoneConfiguration> 
                 return false;
             }
 
+            String bodyText = snapshotResponse(response);
+
             try {
-                ErrorResponse res = MAPPER.readValue(response.body().byteStream(), ErrorResponse.class);
+                ErrorResponse res = MAPPER.readValue(bodyText, ErrorResponse.class);
+
                 if (!res.code.equals("CB_VA01")) {
                     return false;
                 }
 
+                String[] keywords = new String[]{
+                        "すでに登録されています",
+                        "already exists",
+                        "已存在"
+                };
+
                 if (res.errors.containsKey("users.code")) {
-                    return hasExistsMessage(res.errors, "users.code");
+                    return hasMessage(res.errors, "users.code", keywords);
                 }
                 if (res.errors.containsKey("groups.code")) {
-                    return hasExistsMessage(res.errors, "groups.code");
+                    return hasMessage(res.errors, "groups.code", keywords);
                 }
                 if (res.errors.containsKey("organizations.code")) {
-                    return hasExistsMessage(res.errors, "organizations.code");
+                    return hasMessage(res.errors, "organizations.code", keywords);
                 }
             } catch (IOException e) {
                 throw new ConnectorIOException(e);
@@ -166,15 +178,21 @@ public class KintoneRESTClient extends AbstractRESTClient<KintoneConfiguration> 
             return false;
         }
 
-        private boolean hasExistsMessage(Map<String, Map<String, List<String>>> error, String key) {
-            Map<String, List<String>> messages = error.get(key);
-            if (messages != null) {
-                List<String> message = messages.get("message");
-                Optional<String> found = message.stream().filter(m -> {
+        private boolean hasMessage(Map<String, Map<String, List<String>>> error, String key, String... keywords) {
+            Map<String, List<String>> message = error.get(key);
+            if (message != null) {
+                List<String> messages = message.get("messages");
+                if (messages == null) {
+                    return false;
+                }
+                Optional<String> found = messages.stream().filter(m -> {
                             // The error message depends on the API user's locale
-                            return m.endsWith("すでに登録されています") ||
-                                    m.endsWith("already exists") ||
-                                    m.endsWith("已存在");
+                            for (String k : keywords) {
+                                if (m.contains(k)) {
+                                    return true;
+                                }
+                            }
+                            return false;
                         })
                         .findFirst();
                 return found.isPresent();
@@ -189,18 +207,40 @@ public class KintoneRESTClient extends AbstractRESTClient<KintoneConfiguration> 
 
         @Override
         public boolean isNotFound(Response response) {
-            try {
-                ListBody res = MAPPER.readValue(response.body().byteStream(), ListBody.class);
-                if (res.users != null && res.users.isEmpty() &&
-                        res.organizations != null && res.organizations.isEmpty() &&
-                        res.groups != null && res.groups.isEmpty()) {
-                    return true;
-                }
+            if (response.code() != 400) {
                 return false;
+            }
 
+            String bodyText = snapshotResponse(response);
+
+            try {
+                ErrorResponse res = MAPPER.readValue(bodyText, ErrorResponse.class);
+
+                if (!res.code.equals("CB_VA01")) {
+                    return false;
+                }
+
+                String[] keywords = new String[]{
+                        "見つかりません",
+                        "not found",
+                        "未找到指定的",
+                        "未找到相應的"
+                };
+
+                if (res.errors.containsKey("users.code")) {
+                    return hasMessage(res.errors, "users.code", keywords);
+                }
+                if (res.errors.containsKey("groups.code")) {
+                    return hasMessage(res.errors, "groups.code", keywords);
+                }
+                if (res.errors.containsKey("organizations.code")) {
+                    return hasMessage(res.errors, "organizations.code", keywords);
+                }
             } catch (IOException e) {
                 throw new ConnectorIOException(e);
             }
+
+            return false;
         }
 
         @Override
@@ -210,9 +250,8 @@ public class KintoneRESTClient extends AbstractRESTClient<KintoneConfiguration> 
 
         @Override
         public boolean isServerError(Response response) {
-            return response.code() >= 500 || response.code() <= 599;
+            return response.code() >= 500 && response.code() <= 599;
         }
-
     }
 
     public void init(String instanceName, KintoneConfiguration configuration, OkHttpClient httpClient) {
@@ -251,7 +290,11 @@ public class KintoneRESTClient extends AbstractRESTClient<KintoneConfiguration> 
     // User
 
     public Uid createUser(KintoneUserModel newUser) throws AlreadyExistsException {
-        callCreate(USER_OBJECT_CLASS, userEndpoint, newUser, newUser.code);
+        ListBody body = new ListBody();
+        body.users = new ArrayList<>(1);
+        body.users.add(newUser);
+
+        callCreate(USER_OBJECT_CLASS, userEndpoint, body, newUser.code);
 
         // We need to fetch the created object for getting the generated id
         KintoneUserModel created = getUser(new Name(newUser.code), null, null);
@@ -298,11 +341,11 @@ public class KintoneRESTClient extends AbstractRESTClient<KintoneConfiguration> 
     }
 
     public void updateUser(Uid uid, KintoneUserModel update) {
-        ListBody list = new ListBody();
-        list.users = new ArrayList<>(1);
-        list.users.add(update);
+        ListBody body = new ListBody();
+        body.users = new ArrayList<>(1);
+        body.users.add(update);
 
-        callUpdate(USER_OBJECT_CLASS, userEndpoint, uid, list);
+        callUpdate(USER_OBJECT_CLASS, userEndpoint, uid, body);
     }
 
     public void renameUser(Uid uid, String newCode) {
@@ -486,7 +529,11 @@ public class KintoneRESTClient extends AbstractRESTClient<KintoneConfiguration> 
     // Organization
 
     public Uid createOrganization(KintoneOrganizationModel newOrganization) throws AlreadyExistsException {
-        callCreate(ORGANIZATION_OBJECT_CLASS, organizationEndpoint, newOrganization, newOrganization.code);
+        ListBody body = new ListBody();
+        body.organizations = new ArrayList<>(1);
+        body.organizations.add(newOrganization);
+
+        callCreate(ORGANIZATION_OBJECT_CLASS, organizationEndpoint, body, newOrganization.code);
 
         // We need to fetch the created object for getting the generated id
         KintoneGroupModel created = getGroup(new Name(newOrganization.code), null, null);
@@ -495,11 +542,11 @@ public class KintoneRESTClient extends AbstractRESTClient<KintoneConfiguration> 
     }
 
     public void updateOrganization(Uid uid, KintoneOrganizationModel update) {
-        ListBody list = new ListBody();
-        list.organizations = new ArrayList<>(1);
-        list.organizations.add(update);
+        ListBody body = new ListBody();
+        body.organizations = new ArrayList<>(1);
+        body.organizations.add(update);
 
-        callUpdate(ORGANIZATION_OBJECT_CLASS, organizationEndpoint, uid, list);
+        callUpdate(ORGANIZATION_OBJECT_CLASS, organizationEndpoint, uid, body);
     }
 
     public void renameOrganization(Uid uid, String newCode) {
@@ -610,7 +657,11 @@ public class KintoneRESTClient extends AbstractRESTClient<KintoneConfiguration> 
     // Group
 
     public Uid createGroup(KintoneGroupModel newGroup) throws AlreadyExistsException {
-        callCreate(GROUP_OBJECT_CLASS, groupEndpoint, newGroup, newGroup.code);
+        ListBody body = new ListBody();
+        body.groups = new ArrayList<>(1);
+        body.groups.add(newGroup);
+
+        callCreate(GROUP_OBJECT_CLASS, groupEndpoint, body, newGroup.code);
 
         // We need to fetch the created object for getting the generated id
         KintoneGroupModel created = getGroup(new Name(newGroup.code), null, null);
@@ -619,11 +670,11 @@ public class KintoneRESTClient extends AbstractRESTClient<KintoneConfiguration> 
     }
 
     public void updateGroup(Uid uid, KintoneGroupModel update) {
-        ListBody list = new ListBody();
-        list.groups = new ArrayList<>(1);
-        list.groups.add(update);
+        ListBody body = new ListBody();
+        body.groups = new ArrayList<>(1);
+        body.groups.add(update);
 
-        callUpdate(GROUP_OBJECT_CLASS, groupEndpoint, uid, list);
+        callUpdate(GROUP_OBJECT_CLASS, groupEndpoint, uid, body);
     }
 
     public void renameGroup(Uid uid, String newCode) {
@@ -653,17 +704,15 @@ public class KintoneRESTClient extends AbstractRESTClient<KintoneConfiguration> 
         params.put("ids", uid.getUidValue());
 
         try (Response response = get(groupEndpoint, params)) {
-            try {
-                ListBody list = MAPPER.readValue(response.body().byteStream(), ListBody.class);
-                if (list.groups == null || list.groups.size() != 1) {
-                    // Something wrong..
-                    throw new ConnectorIOException(String.format("Cannot find %s group %s", instanceName, uid.getUidValue()));
-                }
-                return list.groups.get(0);
-
-            } catch (IOException e) {
-                throw new ConnectorIOException(String.format("Cannot parse %s REST API Response", instanceName), e);
+            ListBody list = MAPPER.readValue(response.body().byteStream(), ListBody.class);
+            if (list.groups == null || list.groups.size() != 1) {
+                // Something wrong..
+                throw new ConnectorIOException(String.format("Cannot find %s group %s", instanceName, uid.getUidValue()));
             }
+            return list.groups.get(0);
+
+        } catch (IOException e) {
+            throw new ConnectorIOException(String.format("Cannot parse %s REST API Response", instanceName), e);
         }
     }
 
@@ -672,17 +721,15 @@ public class KintoneRESTClient extends AbstractRESTClient<KintoneConfiguration> 
         params.put("codes", name.getNameValue());
 
         try (Response response = get(groupEndpoint, params)) {
-            try {
-                ListBody list = MAPPER.readValue(response.body().byteStream(), ListBody.class);
-                if (list.groups == null || list.groups.size() != 1) {
-                    // Something wrong..
-                    throw new ConnectorIOException(String.format("Cannot find %s group %s", instanceName, name.getNameValue()));
-                }
-                return list.groups.get(0);
-
-            } catch (IOException e) {
-                throw new ConnectorIOException(String.format("Cannot parse %s REST API Response", instanceName), e);
+            ListBody list = MAPPER.readValue(response.body().byteStream(), ListBody.class);
+            if (list.groups == null || list.groups.size() != 1) {
+                // Something wrong..
+                throw new ConnectorIOException(String.format("Cannot find %s group %s", instanceName, name.getNameValue()));
             }
+            return list.groups.get(0);
+
+        } catch (IOException e) {
+            throw new ConnectorIOException(String.format("Cannot parse %s REST API Response", instanceName), e);
         }
     }
 

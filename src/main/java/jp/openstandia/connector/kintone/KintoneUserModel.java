@@ -20,6 +20,7 @@ import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Optional;
 
 @JsonIgnoreProperties(ignoreUnknown = true)
 public class KintoneUserModel {
@@ -133,10 +134,13 @@ public class KintoneUserModel {
         if (customItemValues == null) {
             return null;
         }
-        return customItemValues.stream().filter(c -> c.code.equals(code))
+        Optional<String> value = customItemValues.stream().filter(c -> c.code.equals(code))
                 .map(c -> c.value)
-                .findFirst()
-                .get();
+                .findFirst();
+        if (value.isPresent()) {
+            return value.get();
+        }
+        return null;
     }
 
     public void addServices(List<String> services) {

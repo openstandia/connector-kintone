@@ -56,7 +56,7 @@ public class KintoneConfiguration extends AbstractConfiguration {
 
     public void setBaseURL(String baseURL) {
         if (baseURL.endsWith("/")) {
-            baseURL = baseURL.substring(0, baseURL.lastIndexOf("/") - 1);
+            baseURL = baseURL.substring(0, baseURL.lastIndexOf("/"));
         }
         this.baseURL = baseURL;
     }

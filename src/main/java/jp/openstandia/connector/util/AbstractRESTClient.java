@@ -18,6 +18,7 @@ package jp.openstandia.connector.util;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import okhttp3.*;
+import okio.BufferedSource;
 import org.identityconnectors.common.logging.Log;
 import org.identityconnectors.framework.common.exceptions.*;
 import org.identityconnectors.framework.common.objects.ObjectClass;
@@ -89,7 +90,7 @@ public abstract class AbstractRESTClient<C extends Configuration> {
                 throw new AlreadyExistsException(String.format("%s %s '%s' already exists.", instanceName, objectClass.getObjectClassValue(), name));
             }
             if (errorHandler.isInvalidRequest(response)) {
-                throw new InvalidAttributeValueException(String.format("Bad request when creating %s %s '%s'", instanceName, objectClass.getObjectClassValue(), name));
+                throw new InvalidAttributeValueException(String.format("Bad request when creating %s %s '%s': %s", instanceName, objectClass.getObjectClassValue(), name, toBody(response)));
             }
 
             if (!this.errorHandler.isOk(response)) {
@@ -107,13 +108,13 @@ public abstract class AbstractRESTClient<C extends Configuration> {
 
     protected void callPatch(ObjectClass objectClass, String url, Uid uid, Object target) {
         try (Response response = patch(url, target)) {
+            if (this.errorHandler.isNotFound(response)) {
+                throw new UnknownUidException(uid, objectClass);
+            }
+
             if (this.errorHandler.isInvalidRequest(response)) {
                 throw new InvalidAttributeValueException(String.format("Bad request when updating %s %s: %s, response: %s",
                         this.instanceName, objectClass.getObjectClassValue(), uid.getUidValue(), toBody(response)));
-            }
-
-            if (this.errorHandler.isNotFound(response)) {
-                throw new UnknownUidException(uid, objectClass);
             }
 
             if (!this.errorHandler.isOk(response)) {
@@ -131,13 +132,13 @@ public abstract class AbstractRESTClient<C extends Configuration> {
 
     protected void callUpdate(ObjectClass objectClass, String url, Uid uid, Object target) {
         try (Response response = put(url, target)) {
+            if (this.errorHandler.isNotFound(response)) {
+                throw new UnknownUidException(uid, objectClass);
+            }
+
             if (this.errorHandler.isInvalidRequest(response)) {
                 throw new InvalidAttributeValueException(String.format("Bad request when updating %s %s: %s, response: %s",
                         this.instanceName, objectClass.getObjectClassValue(), uid.getUidValue(), toBody(response)));
-            }
-
-            if (this.errorHandler.isNotFound(response)) {
-                throw new UnknownUidException(uid, objectClass);
             }
 
             if (!this.errorHandler.isOk(response)) {
@@ -160,9 +161,11 @@ public abstract class AbstractRESTClient<C extends Configuration> {
         }
         try {
             return resBody.string();
-        } catch (IOException e) {
+        } catch (IOException | IllegalStateException e) {
             LOG.error(e, "Unexpected {0} API response", this.instanceName);
             return "<failed_to_parse_response>";
+        } finally {
+            resBody.close();
         }
     }
 
@@ -178,6 +181,11 @@ public abstract class AbstractRESTClient<C extends Configuration> {
         try (Response response = delete(url, body)) {
             if (this.errorHandler.isNotFound(response)) {
                 throw new UnknownUidException(uid, objectClass);
+            }
+
+            if (this.errorHandler.isInvalidRequest(response)) {
+                throw new InvalidAttributeValueException(String.format("Bad request when deleting %s %s: %s, response: %s",
+                        this.instanceName, objectClass.getObjectClassValue(), uid.getUidValue(), toBody(response)));
             }
 
             if (!this.errorHandler.isOk(response)) {
@@ -205,7 +213,7 @@ public abstract class AbstractRESTClient<C extends Configuration> {
     }
 
     private void throwExceptionIfUnauthorized(Response response) throws ConnectorIOException {
-        if (!this.errorHandler.inNotAuthenticated(response)) {
+        if (this.errorHandler.inNotAuthenticated(response)) {
             throw new ConnectionFailedException(String.format("Cannot authenticate to the %s REST API: %s",
                     this.instanceName, response.message()));
         }
@@ -349,5 +357,15 @@ public abstract class AbstractRESTClient<C extends Configuration> {
         throwExceptionIfServerError(response);
 
         return response;
+    }
+
+    protected String snapshotResponse(Response response) {
+        final BufferedSource source = response.body().source();
+        try {
+            source.request(Integer.MAX_VALUE);
+        } catch (IOException e) {
+            return null;
+        }
+        return source.getBuffer().snapshot().utf8();
     }
 }
