@@ -289,10 +289,10 @@ public class KintoneConfiguration extends AbstractConfiguration {
             throw new ConfigurationException("Kintone Base URL is required");
         }
         if (loginName == null) {
-            throw new ConfigurationException("Kintone Application Name is required");
+            throw new ConfigurationException("Kintone loginName is required");
         }
         if (password == null) {
-            throw new ConfigurationException("Kintone Application Password is required");
+            throw new ConfigurationException("Kintone password is required");
         }
     }
 }

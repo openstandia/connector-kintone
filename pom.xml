@@ -205,7 +205,7 @@
                 <dependency>
                     <groupId>com.evolveum.midpoint.gui</groupId>
                     <artifactId>admin-gui</artifactId>
-                    <version>4.4.3</version>
+                    <version>4.4.4</version>
                     <type>jar</type>
                     <classifier>classes</classifier>
                     <scope>provided</scope>
